@@ -1,0 +1,559 @@
+:root {
+  /* Colors */
+  --primary-color: #258cfb;
+  --text-color: #333;
+  --background-color: #a8a5d4;
+  --bg-image-mobile: url('../images/bg-image-mobile.jpg');
+  --bg-image-desktop: url('../images/bg-image-desktop.jpg');
+  
+  /* Spacing */
+  --content-padding: 1.5rem;
+  
+  /* Breakpoints */
+  --mobile-width: 767px;
+  --tablet-width: 768px;
+  --desktop-width: 1024px;
+  
+  /* Container widths */
+  --mobile-container: 100%;
+  --tablet-container: 750px;
+  --desktop-container: 960px;
+  --max-container: 1140px;
+}
+
+html {
+  font-size: 16px;
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  color: var(--text-color);
+  background-image: var(--bg-image-mobile);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  display: flex;
+  flex-direction: column;
+  will-change: background-image;
+  contain: paint;
+}
+
+@media (min-width: 768px) {
+  body {
+    background-image: var(--bg-image-desktop);
+  }
+}
+
+/* Base shared styles */
+.content {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile Styles */
+@media (max-width: 767px) {
+  .content {
+    height: 100dvh; /* Dynamic viewport height */
+    height: 100vh; /* Fallback */
+    max-width: var(--max-width);
+    margin: 0;
+    padding: var(--content-padding);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .profile-image-container {
+    position: relative;
+    width: 100%;
+    height: 35vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .profile-image {
+    width: auto;
+    height: 100%;
+    max-height: 35vh;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+    margin: 0 auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: opacity 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .profile-default {
+    transform: translateX(2rem);
+  }
+
+  .profile-press {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%) translateX(2.3rem) scale(1.07);
+    transform-origin: center;
+    will-change: transform, opacity;
+  }
+
+  .profile-image-container.pressed .profile-press,
+  .profile-image-container:hover .profile-press {
+    opacity: 1;
+  }
+
+  .profile-image-container.pressed .profile-default,
+  .profile-image-container:hover .profile-default {
+    opacity: 0;
+  }
+
+  .profile-section {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 37vh;
+  }
+
+  .bio {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(237, 203, 152, .75);
+    margin: 0;
+    margin-left: calc(-1 * var(--content-padding));
+    margin-right: calc(-1 * var(--content-padding));
+    padding: var(--content-padding);
+    width: calc(100% + (var(--content-padding) * 2));
+    box-sizing: border-box;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    height: calc(100dvh - 37vh);
+    height: calc(100vh - 37vh); /* Fallback */
+  }
+
+  .bio h1 {
+    margin: 0;
+    padding-top: 0.25vh;
+    margin-bottom: 0.50rem;
+  }
+
+  .bio p {
+    margin: 0;
+    font-size: 0.95rem;
+    margin-bottom: 0.95rem;
+  }
+
+  .social-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    padding: 0;
+  }
+}
+
+/* Hide accordion by default (mobile) */
+.accordion {
+  display: none;
+}
+
+.social-links {
+  display: flex;
+  gap: clamp(1rem, 2vw, 2rem);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.talmy-image {
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: contain;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.talmy-image.jumping {
+  animation: jump 0.8s ease forwards;
+}
+
+.talmy-left {
+  transform: scaleX(-1);
+}
+
+.talmy-left.jumping {
+  animation: jumpFlipped 0.8s ease forwards;
+}
+
+.social-links a {
+  color: var(--text-color);
+  text-decoration: none;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.social-links a:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.social-links a:active {
+  transform: translateY(-1px);
+}
+
+.social-links a i {
+  font-size: 1.5rem;
+}
+
+.social-links a:hover i {
+  animation: bounce 0.5s ease;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes jump {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-3em); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes jumpFlipped {
+  0% { transform: translateY(0) scaleX(-1); }
+  50% { transform: translateY(-3em) scaleX(-1); }
+  100% { transform: translateY(0) scaleX(-1); }
+}
+
+/* Small mobile adjustments */
+@media (max-width: 480px) {
+  .content {
+    padding: var(--content-padding) 1rem;
+  }
+}
+
+/* For very tall screens */
+@media (min-aspect-ratio: 16/9) {
+  .profile-image {
+    height: 35vh;
+  }
+  
+  .content {
+    min-height: 65vh;
+  }
+}
+
+/* Desktop Styles */
+@media (min-width: 768px) {
+  /* All desktop-specific styles will go here */
+  /* This ensures we don't affect the mobile layout */
+  
+  :root {
+    /* Adjust some variables for desktop if needed */
+    --content-padding: 2rem;
+  }
+
+  body {
+    overflow-y: hidden; /* Ensure full-height layout */
+  }
+
+  .content {
+    height: 100vh;
+    width: 100%;
+    padding: 0;
+    background-color: transparent;
+  }
+
+  .desktop-layout {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100vh;
+    background-color: transparent;
+  }
+
+  .profile-section {
+    width: 40%;
+    height: 100vh;
+    padding: var(--content-padding);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    position: relative;
+  }
+
+  .profile-image-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bio {
+    width: 60%;
+    height: 100vh;
+    background-color: rgba(237, 203, 152, .75);
+    padding: var(--content-padding);
+    padding-top: calc(var(--content-padding) * 2.5);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2vh;
+  }
+
+  .bio h1 {
+    font-size: 2.75em;
+    margin: 0;
+  }
+
+  .bio p {
+    font-size: calc(0.95rem * 1.35);
+    margin: 0;
+  }
+
+  .talmy-image {
+    width: 2.5rem;
+    height: 2.5rem;
+    transform: scale(2.10);
+  }
+
+  .talmy-left {
+    transform: scaleX(-1) scale(2.10);
+  }
+
+  .talmy-image.jumping {
+    animation: jumpDesktop 0.8s ease forwards;
+  }
+
+  .talmy-left.jumping {
+    animation: jumpFlippedDesktop 0.8s ease forwards;
+  }
+
+  @keyframes jumpDesktop {
+    0% { transform: scale(2.10); }
+    50% { transform: translateY(-3em) scale(2.10); }
+    100% { transform: scale(2.10); }
+  }
+
+  @keyframes jumpFlippedDesktop {
+    0% { transform: scaleX(-1) scale(2.10); }
+    50% { transform: translateY(-3em) scaleX(-1) scale(2.10); }
+    100% { transform: scaleX(-1) scale(2.10); }
+  }
+
+  .social-container {
+    align-items: center;
+    margin-bottom: 2vh;
+    display: flex;
+    justify-content: center;
+    margin-top: 3vh;
+    width: 100%;
+    gap: 2rem;
+  }
+
+  .social-links {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+  }
+
+  /* Accordion styles */
+  .accordion {
+    display: block;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  .accordion-item {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    transition: opacity 0.3s ease-out, height 0.3s ease-out;
+    opacity: 1;
+    height: auto;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .accordion-item:last-child {
+    border-bottom: none;
+  }
+
+  /* Hide items above the active one */
+  .accordion-item:has(~ .accordion-item.active) {
+    height: 0;
+    opacity: 0;
+    border: none;
+    padding: 0;
+  }
+
+  .accordion-item.active,
+  .accordion-item.active ~ .accordion-item {
+    opacity: 1;
+    height: auto;
+  }
+
+  .accordion-header {
+    width: 100%;
+    padding: 1rem;
+    background: transparent;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.3em;
+    color: var(--text-color);
+    transition: background-color 0.3s ease;
+  }
+
+  .accordion-header:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .accordion-header i {
+    transition: transform 0.3s ease;
+  }
+
+  .accordion-item.active .accordion-header i {
+    transform: rotate(180deg);
+  }
+
+  .accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.3s ease-out;
+    padding: 0 1rem;
+    opacity: 0;
+  }
+
+  .accordion-item.active .accordion-content {
+    max-height: 25vh;
+    padding: 1rem;
+    overflow-y: auto;
+    opacity: 1;
+  }
+
+  .accordion-content p {
+    font-size: clamp(1.1rem, 1.5vh, 1.4rem);
+    line-height: 1.5;
+  }
+
+  .accordion-content ol {
+    font-size: clamp(1.1rem, 1.5vh, 1.4rem);
+    line-height: 1.5;
+    padding-left: 1.2em;
+  }
+
+  .accordion-content li {
+    margin-bottom: 0.5em;
+  }
+
+  /* Additional responsive adjustments for smaller desktop screens */
+  @media (min-width: 768px) and (max-height: 800px) {
+    .accordion-item.active .accordion-content {
+      max-height: 30vh;
+    }
+    
+    .accordion-content p,
+    .accordion-content ol {
+      font-size: clamp(0.85rem, 1.4vh, 1rem);
+      line-height: 1.4;
+    }
+  }
+
+  .profile-image-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .profile-image {
+    max-width: 116%;
+    max-height: 116%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(2.10);
+  }
+
+  .profile-default {
+    transform: translate(calc(-50% + 2rem), -50%) scale(2.10);
+  }
+
+  .profile-press {
+    transform: translate(calc(-50% + 3rem), -50%) scale(2.35);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .profile-image-container.pressed .profile-press,
+  .profile-image-container:hover .profile-press {
+    opacity: 1;
+  }
+
+  .profile-image-container.pressed .profile-default,
+  .profile-image-container:hover .profile-default {
+    opacity: 0;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+
+  /* Adjust spacing for the new layout */
+  .bio h1 {
+    margin-top: 0;
+  }
+}
+
+.talmy-overdrive {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: black;
+  z-index: 9999;
+}
+
+.talmy-overdrive img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}

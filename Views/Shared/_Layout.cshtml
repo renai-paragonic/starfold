@@ -1,0 +1,23 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>@ViewData["Title"]</title>
+    <link rel="preload" href="~/images/bg-image-mobile.jpg" as="image" fetchpriority="high" media="(max-width: 767px)" />
+    <link rel="preload" href="~/images/bg-image-desktop.jpg" as="image" fetchpriority="high" media="(min-width: 768px)" />
+    <link rel="icon" type="image/png" href="~/images/Talmy.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    @await RenderSectionAsync("PreContent", required: false)
+    <main class="content">
+        @RenderBody()
+    </main>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+</body>
+</html>

@@ -31,6 +31,11 @@ artifacts/
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
 
+# VsCode/Solution Stuff
+starfold-mobile.sln
+.vscode/
+appsettings.Development.json
+
 # NuGet Packages
 *.nupkg
 # NuGet Symbol Packages
@@ -52,3 +57,9 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Docker
+Dockerfile
+.dockerignore
+compose.debug.yaml
+compose.yaml
