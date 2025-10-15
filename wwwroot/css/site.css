@@ -439,7 +439,7 @@ body {
   }
 
   .accordion-header:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(168, 165, 212, 0.2);
   }
 
   .accordion-header i {
@@ -499,23 +499,30 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
   }
 
   .profile-image {
-    max-width: 116%;
-    max-height: 116%;
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(2.10);
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    transform-origin: center;
   }
 
   .profile-default {
-    transform: translate(calc(-50% + 2rem), -50%) scale(2.10);
+    transform: translate(-50%, -50%) scale(.75);
+    top: 50%;
+    left: 50%;
   }
 
   .profile-press {
-    transform: translate(calc(-50% + 3rem), -50%) scale(2.35);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(calc(-50% + 1rem), calc(-50% - 1rem)) scale(.85);
     opacity: 0;
     pointer-events: none;
   }
