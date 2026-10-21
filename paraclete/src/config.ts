@@ -4,7 +4,7 @@ const envSchema = z.object({
   TWITCH_CLIENT_ID: z.string().min(1),
   TWITCH_CLIENT_SECRET: z.string().min(1),
   TWITCH_CHANNEL: z.string().min(1).transform((s) => s.toLowerCase()),
-  DB_PATH: z.string().min(1).default('./data/pneuma.db'),
+  DB_PATH: z.string().min(1).default('./data/paraclete.db'),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 });
 

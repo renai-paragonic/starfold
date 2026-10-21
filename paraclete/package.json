@@ -1,5 +1,5 @@
 {
-  "name": "pneuma",
+  "name": "paraclete",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,9 +11,12 @@
     "build": "tsc",
     "start": "node --env-file-if-exists=.env dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "auth:setup": "node --env-file-if-exists=.env dist/scripts/auth-setup.js"
   },
   "dependencies": {
+    "@twurple/api-call": "^8.2.0",
+    "@twurple/auth": "^8.2.0",
     "pino": "^10.4.0",
     "zod": "^4.6.7"
   },

@@ -1,14 +1,20 @@
 import { loadConfig } from './config.js';
 import { openDb } from './db/index.js';
 import { createLogger } from './logger.js';
+import { createAuthProvider } from './twitch/auth.js';
 
 const config = loadConfig();
 const log = createLogger(config.logLevel);
 
-log.info({ channel: config.channel, dbPath: config.dbPath }, 'pneuma starting');
+log.info({ channel: config.channel, dbPath: config.dbPath }, 'paraclete starting');
 
 const db = openDb(config.dbPath);
 log.info('database ready');
+
+const { roles } = createAuthProvider(db, config, log);
+for (const role of ['bot', 'broadcaster'] as const) {
+  if (!roles.includes(role)) log.warn(`no ${role} token; run: npm run auth:setup -- --role ${role}`);
+}
 
 function shutdown(signal: NodeJS.Signals) {
   log.info({ signal }, 'shutting down');

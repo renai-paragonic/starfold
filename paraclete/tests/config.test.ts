@@ -13,14 +13,14 @@ describe('loadConfig', () => {
       clientId: 'id',
       clientSecret: 'secret',
       channel: 'mychannel',
-      dbPath: './data/pneuma.db',
+      dbPath: './data/paraclete.db',
       logLevel: 'info',
     });
   });
 
   it('respects overrides', () => {
-    const cfg = loadConfig({ ...base, DB_PATH: '/data/pneuma.db', LOG_LEVEL: 'debug' });
-    expect(cfg.dbPath).toBe('/data/pneuma.db');
+    const cfg = loadConfig({ ...base, DB_PATH: '/data/paraclete.db', LOG_LEVEL: 'debug' });
+    expect(cfg.dbPath).toBe('/data/paraclete.db');
     expect(cfg.logLevel).toBe('debug');
   });
 
