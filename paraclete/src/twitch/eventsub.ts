@@ -27,6 +27,7 @@ export function startEventSub(
       userLogin: e.chatterName,
       userDisplayName: e.chatterDisplayName,
       badges: e.badges,
+      channel: e.broadcasterDisplayName,
     });
   });
 

@@ -6,11 +6,7 @@ export type ChatMessage = {
   userLogin: string;
   userDisplayName: string;
   badges: Record<string, string>;
+  channel: string; // broadcaster display name
 };
 
 export type Reply = (text: string) => void;
-
-// Placeholder until the command registry lands in step 5.
-export function handleChatMessage(msg: ChatMessage, reply: Reply): void {
-  if (msg.text.trim().toLowerCase() === '!ping') reply('pong');
-}

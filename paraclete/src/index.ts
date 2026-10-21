@@ -1,10 +1,11 @@
 import { ApiClient } from '@twurple/api';
 import { loadConfig } from './config.js';
-import { handleChatMessage } from './core/chat.js';
+import { createCommandHandler } from './core/commands/registry.js';
 import { openDb } from './db/index.js';
 import { createLogger } from './logger.js';
 import { createAuthProvider } from './twitch/auth.js';
 import { startEventSub } from './twitch/eventsub.js';
+import { createLiveData } from './twitch/live.js';
 import { createChatSender } from './twitch/sender.js';
 
 const config = loadConfig();
@@ -27,10 +28,15 @@ if (!botId || !broadcasterId) {
 const apiClient = new ApiClient({ authProvider: provider });
 const ids = { broadcasterId, botId };
 const sender = createChatSender(apiClient, ids, config.chatRateLimit, log);
+const handleCommand = createCommandHandler({ db, live: createLiveData(apiClient, broadcasterId) });
 const listener = startEventSub(
   apiClient,
   ids,
-  (msg) => handleChatMessage(msg, (text) => sender.push({ text, replyTo: msg.id })),
+  (msg) => {
+    handleCommand(msg, (text) => sender.push({ text, replyTo: msg.id })).catch((err: unknown) =>
+      log.error({ err, text: msg.text }, 'command failed'),
+    );
+  },
   log,
 );
 
