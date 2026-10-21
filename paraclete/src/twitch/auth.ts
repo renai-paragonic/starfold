@@ -30,11 +30,11 @@ export function createAuthProvider(db: Db, config: Config, log: Logger) {
     log.error({ userId, err }, 'token refresh failed; re-run auth:setup for this account');
   });
 
-  const roles: Role[] = [];
+  const userIds: Partial<Record<Role, string>> = {};
   for (const { role, userId, token } of loadTokens(db)) {
     provider.addUser(userId, token, [role]);
-    roles.push(role);
+    userIds[role] = userId;
   }
 
-  return { provider, roles };
+  return { provider, userIds };
 }
