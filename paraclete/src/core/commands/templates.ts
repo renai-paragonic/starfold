@@ -15,6 +15,7 @@ export type TemplateVars = {
   args: string[];
   channel: string;
   count: number;
+  extra?: Record<string, string>; // event fields; these take precedence over the names below
 };
 
 const PLACEHOLDER = /\{(\w+)(?::([^{}]*))?\}/g;
@@ -40,6 +41,7 @@ async function valueOf(
   live: LiveData,
   random: () => number,
 ): Promise<string | undefined> {
+  if (vars.extra && Object.hasOwn(vars.extra, name)) return vars.extra[name];
   const argN = /^arg(\d+)$/.exec(name);
   if (argN) return vars.args[Number(argN[1]) - 1] ?? '';
 

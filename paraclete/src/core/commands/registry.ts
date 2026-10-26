@@ -1,12 +1,11 @@
 import type { Db } from '../../db/index.js';
 import { getCommand, recordUse } from '../../db/commands.js';
-import type { ChatMessage, Reply } from '../chat.js';
+import { MAX_MESSAGE_LENGTH, type ChatMessage, type Reply } from '../chat.js';
 import { builtins } from './builtins.js';
 import { allows, levelOf } from './permissions.js';
 import { render, type LiveData } from './templates.js';
 
 export const USER_COOLDOWN_S = 15;
-const MAX_MESSAGE_LENGTH = 500; // Twitch's chat limit
 
 export function parseCommand(text: string): { name: string; args: string[] } | null {
   const [first, ...args] = text.trim().split(/\s+/);

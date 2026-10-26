@@ -10,3 +10,5 @@ export type ChatMessage = {
 };
 
 export type Reply = (text: string) => void;
+
+export const MAX_MESSAGE_LENGTH = 500; // Twitch's chat limit

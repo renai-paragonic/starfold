@@ -169,7 +169,7 @@ describe('management builtins', () => {
 
     expect(await run('!commands', VIEWER)).toEqual(['Commands: !commands !hello !ping']);
     expect(await run('!commands', MOD, 'u2')).toEqual([
-      'Commands: !addcmd !commands !delcmd !editcmd !hello !modonly !ping',
+      'Commands: !addcmd !commands !delcmd !editcmd !eventmsg !hello !modonly !ping !seteventmsg',
     ]);
   });
 });

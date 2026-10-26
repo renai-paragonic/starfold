@@ -1,6 +1,8 @@
 import type { Db } from '../../db/index.js';
 import { addCommand, deleteCommand, listCommands, updateCommand } from '../../db/commands.js';
+import { getEventResponse, setEventEnabled, setEventTemplate } from '../../db/events.js';
 import type { ChatMessage } from '../chat.js';
+import { EVENT_TYPES, type EventType } from '../events/handlers.js';
 import { allows, parsePermission, type Permission } from './permissions.js';
 
 export type BuiltinContext = { db: Db; msg: ChatMessage; args: string[]; level: Permission };
@@ -33,6 +35,8 @@ function parseManageArgs(args: string[]): ManageArgs {
   if (response) out.response = response;
   return out;
 }
+
+const isEventType = (s: string | undefined): s is EventType => EVENT_TYPES.includes(s as EventType);
 
 function checkName(name: string): string | null {
   return Object.hasOwn(builtins, name) ? `!${name} is a built-in command.` : null;
@@ -86,6 +90,37 @@ export const builtins: Record<string, Builtin> = {
       const reserved = checkName(name);
       if (reserved) return reserved;
       return deleteCommand(db, name) ? `Deleted !${name}.` : `!${name} doesn't exist.`;
+    },
+  },
+
+  seteventmsg: {
+    permission: 'moderator',
+    cooldownS: 0,
+    run({ db, args }) {
+      const type = args[0]?.toLowerCase();
+      const template = args.slice(1).join(' ');
+      if (!isEventType(type) || !template) return `Usage: !seteventmsg <${EVENT_TYPES.join('|')}> message`;
+      setEventTemplate(db, type, template);
+      return `Updated the ${type} message.`;
+    },
+  },
+
+  // !eventmsg type shows the message; !eventmsg type on|off toggles it.
+  eventmsg: {
+    permission: 'moderator',
+    cooldownS: 0,
+    run({ db, args }) {
+      const type = args[0]?.toLowerCase();
+      const toggle = args[1]?.toLowerCase();
+      const usage = `Usage: !eventmsg <${EVENT_TYPES.join('|')}> [on|off]`;
+      if (!isEventType(type)) return usage;
+      if (toggle === undefined) {
+        const { template, enabled } = getEventResponse(db, type);
+        return `${type} (${enabled ? 'on' : 'off'}): ${template}`;
+      }
+      if (toggle !== 'on' && toggle !== 'off') return usage;
+      setEventEnabled(db, type, toggle === 'on');
+      return `Turned the ${type} message ${toggle}.`;
     },
   },
 
