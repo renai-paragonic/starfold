@@ -63,3 +63,6 @@ Dockerfile
 .dockerignore
 compose.debug.yaml
 compose.yaml
+
+# Ezra / shared SQLite database (local dev)
+/App_Data/

@@ -74,6 +74,8 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - `wwwroot/css/site.css`: all styling.
 - `wwwroot/js/site.js`: all behavior. Vanilla JS, no frameworks.
 - `wwwroot/images/`: artwork. `Talmy Overdrive.gif` has a space in its name, so keep references to it exact.
+- **Ezra** (notes feature): plan and status in `ProjectPlans/ezra.md`. Code in `Data/EzraDbContext.cs`, `Data/Migrations/`, and `Models/Ezra/`.
+- `App_Data/`: the local dev SQLite database (git-ignored). Don't put it in `data/`: on Windows that's the same folder as `Data/` (the code).
 
 ### Layout rules
 - There are two separate layouts, split at **767px / 768px**. Mobile styles live in `@media (max-width: 767px)` and desktop styles in `@media (min-width: 768px)`. Put each change in the block it applies to.
@@ -96,6 +98,8 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Some files have a UTF-8 BOM. Preserve the existing encoding.
 - Add new images to `wwwroot/images/` and reference them with root-relative paths (`/images/...`), as the existing markup does.
 - Keep it dependency-free: no npm, no bundler, and no new NuGet packages or CDN libraries without asking.
+- Approved NuGet packages: `Microsoft.EntityFrameworkCore.Sqlite` and `.Design` (9.0.x), and `Markdig` (from Ezra step 3).
+- `dotnet-ef` is a local tool (`dotnet tool restore`). Add migrations with `dotnet tool run dotnet-ef migrations add <Name> --output-dir Data/Migrations`. The app applies them at startup.
 
 ---
 
