@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · Ezra</title>
+    <link rel="icon" type="image/png" href="~/images/Talmy.png" />
+    <link rel="stylesheet" href="~/css/ezra.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="ezra-header">
+        <a href="/ezra" class="ezra-brand">Ezra</a>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <form asp-controller="Account" asp-action="Logout" method="post">
+                <button type="submit" class="ezra-link-button">Sign out</button>
+            </form>
+        }
+    </header>
+    <main class="ezra-main">
+        @RenderBody()
+    </main>
+</body>
+</html>

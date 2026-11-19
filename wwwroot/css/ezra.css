@@ -1,0 +1,62 @@
+/* Ezra (notes). Separate from site.css, which locks the homepage to one screen. */
+:root {
+    --ezra-bg: #faf8f5;
+    --ezra-fg: #222;
+    --ezra-muted: #666;
+    --ezra-accent: #5b3fa8;
+    --ezra-error: #b00020;
+    --ezra-border: #ccc;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--ezra-bg);
+    color: var(--ezra-fg);
+    font: 16px/1.5 system-ui, sans-serif;
+}
+
+.ezra-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--ezra-border);
+}
+
+.ezra-brand {
+    color: var(--ezra-accent);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.ezra-link-button {
+    border: none;
+    background: none;
+    color: var(--ezra-accent);
+    font: inherit;
+    cursor: pointer;
+}
+
+.ezra-main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+.ezra-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 360px;
+}
+
+.ezra-form input,
+.ezra-form button {
+    font: inherit;
+    padding: 8px 10px;
+}
+
+.ezra-error { color: var(--ezra-error); }
+.ezra-error ul { margin: 0; padding-left: 20px; }

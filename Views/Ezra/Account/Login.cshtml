@@ -1,0 +1,11 @@
+@{
+    ViewData["Title"] = "Sign in";
+}
+<h1>Sign in</h1>
+<form asp-action="Login" method="post" class="ezra-form">
+    <div asp-validation-summary="ModelOnly" class="ezra-error"></div>
+    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required autofocus />
+    <button type="submit">Sign in</button>
+</form>
