@@ -1,0 +1,39 @@
+@model NoteForm
+@{
+    var noteId = ViewData["NoteId"] as int?;
+    ViewData["Title"] = noteId is null ? "New note" : "Edit note";
+    ViewData["MainClass"] = "ezra-main-wide";
+}
+<h1>@ViewData["Title"]</h1>
+<form asp-action="@(noteId is null ? "New" : "Edit")" asp-route-id="@noteId" method="post"
+      class="ezra-editor" data-preview-url="/ezra/preview">
+    <div asp-validation-summary="All" class="ezra-error"></div>
+    <label asp-for="Title"></label>
+    <input asp-for="Title" autocomplete="off" />
+    <label class="ezra-check"><input asp-for="IsPublic" /> Public</label>
+    <div class="ezra-tabs">
+        <button type="button" data-mode="write" aria-pressed="true">Write</button>
+        <button type="button" data-mode="preview" aria-pressed="false">Preview</button>
+    </div>
+    <div class="ezra-panes" data-mode="write">
+        <textarea asp-for="BodyMd" aria-label="Body (Markdown)"></textarea>
+        <div class="ezra-preview ezra-prose" aria-live="polite">@Html.Raw(NoteMarkdown.ToHtml(Model.BodyMd))</div>
+    </div>
+    <div class="ezra-actions">
+        <button type="submit" class="ezra-button">Save</button>
+        @if (noteId is null)
+        {
+            <a asp-action="Index">Cancel</a>
+        }
+        else
+        {
+            <a asp-action="Show" asp-route-id="@noteId">Cancel</a>
+        }
+    </div>
+</form>
+@if (noteId is not null)
+{
+    <form asp-action="Delete" asp-route-id="@noteId" method="post" class="ezra-delete" data-confirm="Delete this note? This can't be undone.">
+        <button type="submit" class="ezra-danger">Delete note</button>
+    </form>
+}

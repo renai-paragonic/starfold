@@ -1,0 +1,19 @@
+@model Note
+@{
+    ViewData["Title"] = Model.Title;
+}
+<article>
+    <h1>@Model.Title</h1>
+    <p class="ezra-meta">
+        Updated @Model.UpdatedAt.ToString("MMMM d, yyyy")
+        @if (!Model.IsPublic)
+        {
+            <span class="ezra-badge">Private</span>
+        }
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
+        }
+    </p>
+    <div class="ezra-prose">@Html.Raw(NoteMarkdown.ToHtml(Model.BodyMd))</div>
+</article>

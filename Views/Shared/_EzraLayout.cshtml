@@ -6,6 +6,7 @@
     <title>@ViewData["Title"] · Ezra</title>
     <link rel="icon" type="image/png" href="~/images/Talmy.png" />
     <link rel="stylesheet" href="~/css/ezra.css" asp-append-version="true" />
+    <script src="~/js/ezra.js" asp-append-version="true" defer></script>
 </head>
 <body>
     <header class="ezra-header">
@@ -17,7 +18,7 @@
             </form>
         }
     </header>
-    <main class="ezra-main">
+    <main class="ezra-main @ViewData["MainClass"]">
         @RenderBody()
     </main>
 </body>
