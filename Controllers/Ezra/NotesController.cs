@@ -20,6 +20,7 @@ public class NotesController(EzraDbContext db) : Controller
     {
         var all = SignedIn;
         var notes = await db.Notes
+            .Include(n => n.Tags)
             .Where(n => all || n.IsPublic)
             .OrderByDescending(n => n.UpdatedAt)
             .ToListAsync();
@@ -31,22 +32,43 @@ public class NotesController(EzraDbContext db) : Controller
     [HttpGet("notes/{id:int}/{slug?}")]
     public async Task<IActionResult> Show(int id, string? slug)
     {
-        var note = await db.Notes.FindAsync(id);
+        var note = await db.Notes.Include(n => n.Tags).FirstOrDefaultAsync(n => n.Id == id);
         if (note is null || (!note.IsPublic && !SignedIn)) return NotFound();
         if (slug != note.Slug) return RedirectToAction(nameof(Show), new { id, slug = note.Slug });
         return View(note);
     }
 
+    // Notes with a tag. A tag with no notes the visitor can see is 404, so
+    // tags used only on private notes stay hidden. Other casings redirect.
+    [HttpGet("tags/{name}")]
+    public async Task<IActionResult> Tag(string name)
+    {
+        var all = SignedIn;
+        var tag = await db.Tags.FirstOrDefaultAsync(t => t.Name == name);
+        if (tag is null) return NotFound();
+        var notes = await db.Notes
+            .Include(n => n.Tags)
+            .Where(n => (all || n.IsPublic) && n.Tags.Any(t => t.Id == tag.Id))
+            .OrderByDescending(n => n.UpdatedAt)
+            .ToListAsync();
+        if (notes.Count == 0) return NotFound();
+        if (name != tag.Name) return RedirectToAction(nameof(Tag), new { name = tag.Name });
+        ViewData["TagName"] = tag.Name;
+        return View(notes);
+    }
+
     [Authorize, HttpGet("notes/new")]
-    public IActionResult New() => View("Edit", new NoteForm());
+    public Task<IActionResult> New() => EditorView(new NoteForm(), null);
 
     [Authorize, HttpPost("notes/new")]
     public async Task<IActionResult> New(NoteForm form)
     {
-        if (!ModelState.IsValid) return View("Edit", form);
+        var tags = CleanTags(form);
+        if (!ModelState.IsValid) return await EditorView(form, null);
         var now = DateTime.UtcNow;
         var note = new Note { CreatedAt = now };
         Apply(note, form, now);
+        await SetTags(note, tags);
         db.Notes.Add(note);
         await db.SaveChangesAsync();
         return RedirectToAction(nameof(Show), new { id = note.Id, slug = note.Slug });
@@ -55,24 +77,28 @@ public class NotesController(EzraDbContext db) : Controller
     [Authorize, HttpGet("notes/{id:int}/edit")]
     public async Task<IActionResult> Edit(int id)
     {
-        var note = await db.Notes.FindAsync(id);
+        var note = await db.Notes.Include(n => n.Tags).FirstOrDefaultAsync(n => n.Id == id);
         if (note is null) return NotFound();
-        ViewData["NoteId"] = id;
-        return View(new NoteForm { Title = note.Title, BodyMd = note.BodyMd, IsPublic = note.IsPublic });
+        return await EditorView(new NoteForm
+        {
+            Title = note.Title,
+            BodyMd = note.BodyMd,
+            IsPublic = note.IsPublic,
+            Tags = [.. note.Tags.Select(t => t.Name).Order(StringComparer.OrdinalIgnoreCase)],
+        }, id);
     }
 
     [Authorize, HttpPost("notes/{id:int}/edit")]
     public async Task<IActionResult> Edit(int id, NoteForm form)
     {
-        var note = await db.Notes.FindAsync(id);
+        var note = await db.Notes.Include(n => n.Tags).FirstOrDefaultAsync(n => n.Id == id);
         if (note is null) return NotFound();
-        if (!ModelState.IsValid)
-        {
-            ViewData["NoteId"] = id;
-            return View(form);
-        }
+        var tags = CleanTags(form);
+        if (!ModelState.IsValid) return await EditorView(form, id);
         Apply(note, form, DateTime.UtcNow);
+        await SetTags(note, tags);
         await db.SaveChangesAsync();
+        await DeleteUnusedTags();
         return RedirectToAction(nameof(Show), new { id, slug = note.Slug });
     }
 
@@ -83,12 +109,47 @@ public class NotesController(EzraDbContext db) : Controller
         if (note is null) return NotFound();
         db.Notes.Remove(note);
         await db.SaveChangesAsync();
+        await DeleteUnusedTags();
         return RedirectToAction(nameof(Index));
     }
 
     // The editor's live preview (debounced in ezra.js).
     [Authorize, HttpPost("preview")]
     public IActionResult Preview(string? bodyMd) => Content(NoteMarkdown.ToHtml(bodyMd), "text/html");
+
+    // The editor needs every tag name for the flyout's suggestions.
+    private async Task<IActionResult> EditorView(NoteForm form, int? id)
+    {
+        ViewData["NoteId"] = id;
+        ViewData["AllTags"] = (await db.Tags.Select(t => t.Name).ToListAsync())
+            .Order(StringComparer.OrdinalIgnoreCase).ToList();
+        return View("Edit", form);
+    }
+
+    // Normalizes and de-duplicates the posted tag names, and reports any that
+    // break the TagName rules.
+    private List<string> CleanTags(NoteForm form)
+    {
+        var names = form.Tags.Select(TagName.Normalize).Where(n => n != "")
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        foreach (var name in names.Where(n => !TagName.IsValid(n)))
+            ModelState.AddModelError(nameof(form.Tags), $"\"{name}\": {TagName.Rule}");
+        form.Tags = names;
+        return names;
+    }
+
+    // Reuses an existing tag when the name matches in any casing, so a tag
+    // keeps the casing it was first typed with.
+    private async Task SetTags(Note note, List<string> names)
+    {
+        var existing = await db.Tags.ToListAsync();
+        note.Tags.Clear();
+        foreach (var name in names)
+            note.Tags.Add(existing.FirstOrDefault(t => string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase))
+                ?? new Tag { Name = name });
+    }
+
+    private Task<int> DeleteUnusedTags() => db.Tags.Where(t => !t.Notes.Any()).ExecuteDeleteAsync();
 
     private static void Apply(Note note, NoteForm form, DateTime now)
     {

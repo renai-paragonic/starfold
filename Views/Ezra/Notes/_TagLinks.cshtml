@@ -1,0 +1,10 @@
+@model IEnumerable<Tag>
+@if (Model.Any())
+{
+    <ul class="ezra-chips">
+        @foreach (var tag in Model.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            <li><a asp-action="Tag" asp-route-name="@tag.Name" class="ezra-chip">@tag.Name</a></li>
+        }
+    </ul>
+}

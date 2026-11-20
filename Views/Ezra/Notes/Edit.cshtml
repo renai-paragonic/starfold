@@ -11,6 +11,23 @@
     <label asp-for="Title"></label>
     <input asp-for="Title" autocomplete="off" />
     <label class="ezra-check"><input asp-for="IsPublic" /> Public</label>
+    <label for="tag-search">Tags</label>
+    <div class="ezra-tags"
+         data-all-tags="@System.Text.Json.JsonSerializer.Serialize(ViewData["AllTags"])"
+         data-tag-pattern="@TagName.ClientPattern" data-tag-rule="@TagName.Rule">
+        <ul class="ezra-chips">
+            @foreach (var tag in Model.Tags)
+            {
+                <li class="ezra-chip">
+                    @tag<input type="hidden" name="Tags" value="@tag" />
+                    <button type="button" aria-label="Remove tag @tag">×</button>
+                </li>
+            }
+        </ul>
+        <input id="tag-search" type="text" placeholder="Add a tag…" autocomplete="off"
+               role="combobox" aria-expanded="false" aria-controls="tag-options" aria-autocomplete="list" />
+        <ul id="tag-options" class="ezra-flyout" role="listbox" aria-label="Tags" hidden></ul>
+    </div>
     <div class="ezra-tabs">
         <button type="button" data-mode="write" aria-pressed="true">Write</button>
         <button type="button" data-mode="preview" aria-pressed="false">Preview</button>

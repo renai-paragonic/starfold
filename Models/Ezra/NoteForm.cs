@@ -11,4 +11,7 @@ public class NoteForm
     public string? BodyMd { get; set; }
 
     public bool IsPublic { get; set; }
+
+    // One entry per tag chip. Names are cleaned and checked in the controller.
+    public List<string> Tags { get; set; } = [];
 }

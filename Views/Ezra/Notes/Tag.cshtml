@@ -1,0 +1,7 @@
+@model List<Note>
+@{
+    ViewData["Title"] = ViewData["TagName"];
+}
+<h1>Tagged “@ViewData["TagName"]”</h1>
+<p class="ezra-meta"><a asp-action="Index">All notes</a></p>
+<partial name="_NoteList" model="Model" />
