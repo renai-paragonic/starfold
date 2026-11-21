@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using starfold_mobile.Bible;
 using starfold_mobile.Data;
 using starfold_mobile.Models.Ezra;
 
@@ -20,7 +21,7 @@ public class NotesController(EzraDbContext db) : Controller
     {
         var all = SignedIn;
         var notes = await db.Notes
-            .Include(n => n.Tags)
+            .Include(n => n.Tags).Include(n => n.Refs)
             .Where(n => all || n.IsPublic)
             .OrderByDescending(n => n.UpdatedAt)
             .ToListAsync();
@@ -32,7 +33,7 @@ public class NotesController(EzraDbContext db) : Controller
     [HttpGet("notes/{id:int}/{slug?}")]
     public async Task<IActionResult> Show(int id, string? slug)
     {
-        var note = await db.Notes.Include(n => n.Tags).FirstOrDefaultAsync(n => n.Id == id);
+        var note = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).FirstOrDefaultAsync(n => n.Id == id);
         if (note is null || (!note.IsPublic && !SignedIn)) return NotFound();
         if (slug != note.Slug) return RedirectToAction(nameof(Show), new { id, slug = note.Slug });
         return View(note);
@@ -47,13 +48,39 @@ public class NotesController(EzraDbContext db) : Controller
         var tag = await db.Tags.FirstOrDefaultAsync(t => t.Name == name);
         if (tag is null) return NotFound();
         var notes = await db.Notes
-            .Include(n => n.Tags)
+            .Include(n => n.Tags).Include(n => n.Refs)
             .Where(n => (all || n.IsPublic) && n.Tags.Any(t => t.Id == tag.Id))
             .OrderByDescending(n => n.UpdatedAt)
             .ToListAsync();
         if (notes.Count == 0) return NotFound();
         if (name != tag.Name) return RedirectToAction(nameof(Tag), new { name = tag.Name });
         ViewData["TagName"] = tag.Name;
+        return View(notes);
+    }
+
+    // Notes for a book, chapter or verse. A chapter also finds notes tagged
+    // with the whole book; a verse also finds its whole chapter or book.
+    // Other spellings of the book ("Rom", "romans") redirect to the slug.
+    [HttpGet("bible/{book}/{chapter:int?}/{verse:int?}")]
+    public async Task<IActionResult> Bible(string book, int? chapter, int? verse)
+    {
+        var found = BibleBooks.Find(book);
+        if (found is null || chapter < 1 || chapter > found.Chapters
+            || (chapter is int c && (verse < 1 || verse > found.VersesIn(c)))) return NotFound();
+        if (book != found.Slug) return RedirectToAction(nameof(Bible), new { book = found.Slug, chapter, verse });
+
+        var refs = db.NoteRefs.Where(r => r.Book == found.Number);
+        if (chapter is not null) refs = refs.Where(r => r.Chapter == null || r.Chapter == chapter);
+        if (verse is not null) refs = refs.Where(r => r.Chapter == null || r.VerseStart == null
+            || (r.VerseStart <= verse && r.VerseEnd >= verse));
+
+        var all = SignedIn;
+        var notes = await db.Notes
+            .Include(n => n.Tags).Include(n => n.Refs)
+            .Where(n => (all || n.IsPublic) && refs.Any(r => r.NoteId == n.Id))
+            .OrderByDescending(n => n.UpdatedAt)
+            .ToListAsync();
+        ViewData["Ref"] = new ScriptureRef(found.Number, chapter, verse, verse);
         return View(notes);
     }
 
@@ -64,11 +91,13 @@ public class NotesController(EzraDbContext db) : Controller
     public async Task<IActionResult> New(NoteForm form)
     {
         var tags = CleanTags(form);
+        var refs = ParseRefs(form);
         if (!ModelState.IsValid) return await EditorView(form, null);
         var now = DateTime.UtcNow;
         var note = new Note { CreatedAt = now };
         Apply(note, form, now);
         await SetTags(note, tags);
+        SetRefs(note, refs);
         db.Notes.Add(note);
         await db.SaveChangesAsync();
         return RedirectToAction(nameof(Show), new { id = note.Id, slug = note.Slug });
@@ -77,7 +106,7 @@ public class NotesController(EzraDbContext db) : Controller
     [Authorize, HttpGet("notes/{id:int}/edit")]
     public async Task<IActionResult> Edit(int id)
     {
-        var note = await db.Notes.Include(n => n.Tags).FirstOrDefaultAsync(n => n.Id == id);
+        var note = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).FirstOrDefaultAsync(n => n.Id == id);
         if (note is null) return NotFound();
         return await EditorView(new NoteForm
         {
@@ -85,18 +114,21 @@ public class NotesController(EzraDbContext db) : Controller
             BodyMd = note.BodyMd,
             IsPublic = note.IsPublic,
             Tags = [.. note.Tags.Select(t => t.Name).Order(StringComparer.OrdinalIgnoreCase)],
+            References = string.Join("; ", NoteRef.Sort(note.Refs).Select(r => r.ToScriptureRef().Format())),
         }, id);
     }
 
     [Authorize, HttpPost("notes/{id:int}/edit")]
     public async Task<IActionResult> Edit(int id, NoteForm form)
     {
-        var note = await db.Notes.Include(n => n.Tags).FirstOrDefaultAsync(n => n.Id == id);
+        var note = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).FirstOrDefaultAsync(n => n.Id == id);
         if (note is null) return NotFound();
         var tags = CleanTags(form);
+        var refs = ParseRefs(form);
         if (!ModelState.IsValid) return await EditorView(form, id);
         Apply(note, form, DateTime.UtcNow);
         await SetTags(note, tags);
+        SetRefs(note, refs);
         await db.SaveChangesAsync();
         await DeleteUnusedTags();
         return RedirectToAction(nameof(Show), new { id, slug = note.Slug });
@@ -147,6 +179,23 @@ public class NotesController(EzraDbContext db) : Controller
         foreach (var name in names)
             note.Tags.Add(existing.FirstOrDefault(t => string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase))
                 ?? new Tag { Name = name });
+    }
+
+    // Reports parse errors inline; the note isn't saved until they're fixed.
+    private List<ScriptureRef> ParseRefs(NoteForm form)
+    {
+        var result = ReferenceParser.Parse(form.References);
+        foreach (var error in result.Errors)
+            ModelState.AddModelError(nameof(form.References), error);
+        return result.Refs;
+    }
+
+    // Replaces the note's references (removed rows are deleted by EF).
+    private static void SetRefs(Note note, List<ScriptureRef> refs)
+    {
+        note.Refs.Clear();
+        foreach (var r in refs)
+            note.Refs.Add(new NoteRef { Book = r.Book, Chapter = r.Chapter, VerseStart = r.VerseStart, VerseEnd = r.VerseEnd });
     }
 
     private Task<int> DeleteUnusedTags() => db.Tags.Where(t => !t.Notes.Any()).ExecuteDeleteAsync();

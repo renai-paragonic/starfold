@@ -1,0 +1,14 @@
+@model Note
+@if (Model.Refs.Count > 0 || Model.Tags.Count > 0)
+{
+    <ul class="ezra-chips">
+        @foreach (var r in NoteRef.Sort(Model.Refs).Select(r => r.ToScriptureRef()))
+        {
+            <li><a href="@r.BrowsePath" class="ezra-chip ezra-chip-ref">@r.Format()</a></li>
+        }
+        @foreach (var tag in Model.Tags.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            <li><a asp-action="Tag" asp-route-name="@tag.Name" class="ezra-chip">@tag.Name</a></li>
+        }
+    </ul>
+}

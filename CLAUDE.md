@@ -46,8 +46,9 @@ The test: Every changed line should trace directly to the user's request.
 
 **Define success criteria. Loop until verified.**
 
-This repo has no test project. Verify instead by:
+Verify by:
 - `dotnet build` with no new warnings.
+- `dotnet test` for the xUnit project in `tests/Starfold.Tests` (the Bible data and reference parser). It covers no UI, so the checks below still apply.
 - `dotnet run` (http://localhost:5021) and check the page at **both** a phone width (~390px) and a desktop width (≥1024px). A change to one layout often breaks the other.
 - Testing interactions by both mouse and touch (profile press, Talmy jumps, accordion).
 
@@ -74,7 +75,8 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - `wwwroot/css/site.css`: all styling.
 - `wwwroot/js/site.js`: all behavior. Vanilla JS, no frameworks.
 - `wwwroot/images/`: artwork. `Talmy Overdrive.gif` has a space in its name, so keep references to it exact.
-- **Ezra** (notes feature): plan and status in `ProjectPlans/ezra.md`. Code in `Data/EzraDbContext.cs`, `Data/Migrations/`, and `Models/Ezra/`.
+- **Ezra** (notes feature): plan and status in `ProjectPlans/ezra.md`. Code in `Data/EzraDbContext.cs`, `Data/Migrations/`, `Models/Ezra/`, `Controllers/Ezra/`, `Views/Ezra/`, and `Bible/` (book data and the reference parser; `BibleBooks.Data.cs` is generated, so see the plan before editing it).
+- `tests/Starfold.Tests/`: the xUnit tests. The app's csproj excludes `tests/**` so the test files don't compile into the app.
 - `App_Data/`: the local dev SQLite database (git-ignored). Don't put it in `data/`: on Windows that's the same folder as `Data/` (the code).
 
 ### Layout rules
@@ -91,14 +93,14 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ### Content and voice
 - The copy is written in Renai's own voice: playful, internet-native, and grounded in scripture. Don't rewrite, "fix", or tone down the copy unless asked. Point out typos rather than silently correcting them.
-- Scripture links go to Bible Gateway with `version=NASB1995`. Follow the same format for new ones.
+- Scripture links go to Bible Gateway with `version=LSB` (Legacy Standard Bible), on the homepage and in Ezra. Follow the same format for new ones.
 - In Razor, a literal `@` must be written `@@` (for example `youtube.com/@@renaiparagonic`).
 
 ### Conventions
 - Some files have a UTF-8 BOM. Preserve the existing encoding.
 - Add new images to `wwwroot/images/` and reference them with root-relative paths (`/images/...`), as the existing markup does.
 - Keep it dependency-free: no npm, no bundler, and no new NuGet packages or CDN libraries without asking.
-- Approved NuGet packages: `Microsoft.EntityFrameworkCore.Sqlite` and `.Design` (9.0.x), and `Markdig` (from Ezra step 3).
+- Approved NuGet packages: `Microsoft.EntityFrameworkCore.Sqlite` and `.Design` (9.0.x), and `Markdig` (from Ezra step 3). In the test project only: `xunit`, `xunit.runner.visualstudio`, and `Microsoft.NET.Test.Sdk` (from Ezra step 5).
 - `dotnet-ef` is a local tool (`dotnet tool restore`). Add migrations with `dotnet tool run dotnet-ef migrations add <Name> --output-dir Data/Migrations`. The app applies them at startup.
 
 ---

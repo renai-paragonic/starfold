@@ -1,3 +1,5 @@
+using starfold_mobile.Bible;
+
 namespace starfold_mobile.Models.Ezra;
 
 // A scripture tag. Book is 1–66 in canonical order. A null Chapter means the
@@ -13,4 +15,10 @@ public class NoteRef
     public int? VerseEnd { get; set; }
 
     public Note Note { get; set; } = null!;
+
+    public ScriptureRef ToScriptureRef() => new(Book, Chapter, VerseStart, VerseEnd);
+
+    // Canonical order: book, then whole book before chapters, then verses.
+    public static IEnumerable<NoteRef> Sort(IEnumerable<NoteRef> refs) =>
+        refs.OrderBy(r => r.Book).ThenBy(r => r.Chapter ?? 0).ThenBy(r => r.VerseStart ?? 0).ThenBy(r => r.VerseEnd ?? 0);
 }

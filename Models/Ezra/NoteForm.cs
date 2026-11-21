@@ -14,4 +14,8 @@ public class NoteForm
 
     // One entry per tag chip. Names are cleaned and checked in the controller.
     public List<string> Tags { get; set; } = [];
+
+    // Semicolon-separated scripture references, read by Bible/ReferenceParser.
+    [Display(Name = "Scripture references")]
+    public string? References { get; set; }
 }

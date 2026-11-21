@@ -28,6 +28,8 @@
                role="combobox" aria-expanded="false" aria-controls="tag-options" aria-autocomplete="list" />
         <ul id="tag-options" class="ezra-flyout" role="listbox" aria-label="Tags" hidden></ul>
     </div>
+    <label asp-for="References"></label>
+    <input asp-for="References" autocomplete="off" placeholder="John 3:16-18, 21; Rom 8; Genesis" />
     <div class="ezra-tabs">
         <button type="button" data-mode="write" aria-pressed="true">Write</button>
         <button type="button" data-mode="preview" aria-pressed="false">Preview</button>

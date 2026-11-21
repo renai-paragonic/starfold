@@ -7,6 +7,7 @@
     --ezra-error: #b00020;
     --ezra-border: #ccc;
     --ezra-chip-bg: #ece6f7;
+    --ezra-ref-bg: #f3e9d2;
 }
 
 * { box-sizing: border-box; }
@@ -121,6 +122,8 @@ body {
     font-size: 14px;
     text-decoration: none;
 }
+
+.ezra-chip-ref { background: var(--ezra-ref-bg); }
 
 .ezra-note-list .ezra-chips { margin-bottom: 0; }
 .ezra-note-list .ezra-chip { margin-right: 0; font-weight: 400; }

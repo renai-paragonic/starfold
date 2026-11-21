@@ -39,7 +39,9 @@ var dataDir = Path.GetDirectoryName(Path.GetFullPath(sqlite.DataSource))!;
 Directory.CreateDirectory(dataDir);
 builder.Services.AddDbContext<EzraDbContext>(o => o.UseSqlite(
     sqlite.ToString(),
-    s => s.MigrationsHistoryTable("ezra_ef_migrations")));
+    // Split queries: notes load both tags and refs, and one joined query
+    // would multiply the rows.
+    s => s.MigrationsHistoryTable("ezra_ef_migrations").UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
 // Ezra sign-in: one admin password (hash in Ezra:AdminPasswordHash), kept in a cookie.
 // Keys live next to the database so logins survive restarts and redeploys.

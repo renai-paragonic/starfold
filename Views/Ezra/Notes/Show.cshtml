@@ -15,6 +15,6 @@
             <a asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
         }
     </p>
-    <partial name="_TagLinks" model="Model.Tags" />
+    <partial name="_NoteChips" model="Model" />
     <div class="ezra-prose">@Html.Raw(NoteMarkdown.ToHtml(Model.BodyMd))</div>
 </article>
