@@ -21,7 +21,7 @@ public class NotesController(EzraDbContext db) : Controller
     {
         var all = SignedIn;
         var notes = await db.Notes
-            .Include(n => n.Tags).Include(n => n.Refs)
+            .Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
             .Where(n => all || n.IsPublic)
             .OrderByDescending(n => n.UpdatedAt)
             .ToListAsync();
@@ -33,7 +33,7 @@ public class NotesController(EzraDbContext db) : Controller
     [HttpGet("notes/{id:int}/{slug?}")]
     public async Task<IActionResult> Show(int id, string? slug)
     {
-        var note = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).FirstOrDefaultAsync(n => n.Id == id);
+        var note = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs).FirstOrDefaultAsync(n => n.Id == id);
         if (note is null || (!note.IsPublic && !SignedIn)) return NotFound();
         if (slug != note.Slug) return RedirectToAction(nameof(Show), new { id, slug = note.Slug });
         return View(note);
@@ -48,7 +48,7 @@ public class NotesController(EzraDbContext db) : Controller
         var tag = await db.Tags.FirstOrDefaultAsync(t => t.Name == name);
         if (tag is null) return NotFound();
         var notes = await db.Notes
-            .Include(n => n.Tags).Include(n => n.Refs)
+            .Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
             .Where(n => (all || n.IsPublic) && n.Tags.Any(t => t.Id == tag.Id))
             .OrderByDescending(n => n.UpdatedAt)
             .ToListAsync();
@@ -76,11 +76,36 @@ public class NotesController(EzraDbContext db) : Controller
 
         var all = SignedIn;
         var notes = await db.Notes
-            .Include(n => n.Tags).Include(n => n.Refs)
+            .Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
             .Where(n => (all || n.IsPublic) && refs.Any(r => r.NoteId == n.Id))
             .OrderByDescending(n => n.UpdatedAt)
             .ToListAsync();
         ViewData["Ref"] = new ScriptureRef(found.Number, chapter, verse, verse);
+        return View(notes);
+    }
+
+    // A lexicon entry and the notes tagged with it. Other spellings ("g0026")
+    // redirect to the stored id. Numbers the lexicon doesn't have are 404.
+    [HttpGet("strongs/{id}")]
+    public async Task<IActionResult> Strongs(string id)
+    {
+        var normal = StrongsParser.Normalize(id);
+        var entry = normal is null ? null : await db.Strongs.FindAsync(normal);
+        if (entry is null) return NotFound();
+        if (id != entry.Id) return RedirectToAction(nameof(Strongs), new { id = entry.Id });
+
+        var all = SignedIn;
+        var notes = await db.Notes
+            .Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
+            .Where(n => (all || n.IsPublic) && n.Strongs.Any(s => s.Id == entry.Id))
+            .OrderByDescending(n => n.UpdatedAt)
+            .ToListAsync();
+
+        // Numbers mentioned in the entry's text become links when they exist.
+        var mentioned = StrongsParser.Mentions(entry.Definition).Concat(StrongsParser.Mentions(entry.Derivation))
+            .Concat(StrongsParser.Mentions(entry.KjvDef)).Distinct().ToList();
+        ViewData["Known"] = (await db.Strongs.Where(s => mentioned.Contains(s.Id)).Select(s => s.Id).ToListAsync()).ToHashSet();
+        ViewData["Entry"] = entry;
         return View(notes);
     }
 
@@ -91,13 +116,13 @@ public class NotesController(EzraDbContext db) : Controller
     public async Task<IActionResult> New(NoteForm form)
     {
         var tags = CleanTags(form);
-        var refs = ParseRefs(form);
+        var (refs, strongs) = await ParseRefs(form);
         if (!ModelState.IsValid) return await EditorView(form, null);
         var now = DateTime.UtcNow;
         var note = new Note { CreatedAt = now };
         Apply(note, form, now);
         await SetTags(note, tags);
-        SetRefs(note, refs);
+        SetRefs(note, refs, strongs);
         db.Notes.Add(note);
         await db.SaveChangesAsync();
         return RedirectToAction(nameof(Show), new { id = note.Id, slug = note.Slug });
@@ -106,7 +131,7 @@ public class NotesController(EzraDbContext db) : Controller
     [Authorize, HttpGet("notes/{id:int}/edit")]
     public async Task<IActionResult> Edit(int id)
     {
-        var note = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).FirstOrDefaultAsync(n => n.Id == id);
+        var note = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs).FirstOrDefaultAsync(n => n.Id == id);
         if (note is null) return NotFound();
         return await EditorView(new NoteForm
         {
@@ -114,21 +139,22 @@ public class NotesController(EzraDbContext db) : Controller
             BodyMd = note.BodyMd,
             IsPublic = note.IsPublic,
             Tags = [.. note.Tags.Select(t => t.Name).Order(StringComparer.OrdinalIgnoreCase)],
-            References = string.Join("; ", NoteRef.Sort(note.Refs).Select(r => r.ToScriptureRef().Format())),
+            References = string.Join("; ", NoteRef.Sort(note.Refs).Select(r => r.ToScriptureRef().Format())
+                .Concat(StrongsParser.Sort(note.Strongs.Select(s => s.Id)))),
         }, id);
     }
 
     [Authorize, HttpPost("notes/{id:int}/edit")]
     public async Task<IActionResult> Edit(int id, NoteForm form)
     {
-        var note = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).FirstOrDefaultAsync(n => n.Id == id);
+        var note = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs).FirstOrDefaultAsync(n => n.Id == id);
         if (note is null) return NotFound();
         var tags = CleanTags(form);
-        var refs = ParseRefs(form);
+        var (refs, strongs) = await ParseRefs(form);
         if (!ModelState.IsValid) return await EditorView(form, id);
         Apply(note, form, DateTime.UtcNow);
         await SetTags(note, tags);
-        SetRefs(note, refs);
+        SetRefs(note, refs, strongs);
         await db.SaveChangesAsync();
         await DeleteUnusedTags();
         return RedirectToAction(nameof(Show), new { id, slug = note.Slug });
@@ -181,21 +207,29 @@ public class NotesController(EzraDbContext db) : Controller
                 ?? new Tag { Name = name });
     }
 
-    // Reports parse errors inline; the note isn't saved until they're fixed.
-    private List<ScriptureRef> ParseRefs(NoteForm form)
+    // The references field holds scripture and Strong's numbers. Strong's
+    // numbers must be in the imported lexicon. Errors are reported inline;
+    // the note isn't saved until they're fixed.
+    private async Task<(List<ScriptureRef>, List<StrongsEntry>)> ParseRefs(NoteForm form)
     {
-        var result = ReferenceParser.Parse(form.References);
+        var (ids, rest) = StrongsParser.Extract(form.References);
+        var result = ReferenceParser.Parse(rest);
         foreach (var error in result.Errors)
             ModelState.AddModelError(nameof(form.References), error);
-        return result.Refs;
+        var strongs = await db.Strongs.Where(s => ids.Contains(s.Id)).ToListAsync();
+        foreach (var id in ids.Except(strongs.Select(s => s.Id)))
+            ModelState.AddModelError(nameof(form.References), $"\"{id}\": not in the Strong's lexicon.");
+        return (result.Refs, strongs);
     }
 
     // Replaces the note's references (removed rows are deleted by EF).
-    private static void SetRefs(Note note, List<ScriptureRef> refs)
+    private static void SetRefs(Note note, List<ScriptureRef> refs, List<StrongsEntry> strongs)
     {
         note.Refs.Clear();
         foreach (var r in refs)
             note.Refs.Add(new NoteRef { Book = r.Book, Chapter = r.Chapter, VerseStart = r.VerseStart, VerseEnd = r.VerseEnd });
+        note.Strongs.Clear();
+        note.Strongs.AddRange(strongs);
     }
 
     private Task<int> DeleteUnusedTags() => db.Tags.Where(t => !t.Notes.Any()).ExecuteDeleteAsync();

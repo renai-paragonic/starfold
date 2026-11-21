@@ -1,10 +1,16 @@
+@using starfold_mobile.Bible
 @model Note
-@if (Model.Refs.Count > 0 || Model.Tags.Count > 0)
+@if (Model.Refs.Count > 0 || Model.Strongs.Count > 0 || Model.Tags.Count > 0)
 {
     <ul class="ezra-chips">
         @foreach (var r in NoteRef.Sort(Model.Refs).Select(r => r.ToScriptureRef()))
         {
             <li><a href="@r.BrowsePath" class="ezra-chip ezra-chip-ref">@r.Format()</a></li>
+        }
+        @foreach (var id in StrongsParser.Sort(Model.Strongs.Select(s => s.Id)))
+        {
+            var lemma = Model.Strongs.First(e => e.Id == id).Lemma;
+            <li><a href="@StrongsParser.BrowsePath(id)" class="ezra-chip ezra-chip-strongs">@id&nbsp;<bdi lang="@(StrongsParser.IsHebrew(id) ? "hbo" : "grc")">@lemma</bdi></a></li>
         }
         @foreach (var tag in Model.Tags.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase))
         {

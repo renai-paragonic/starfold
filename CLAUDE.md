@@ -75,7 +75,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - `wwwroot/css/site.css`: all styling.
 - `wwwroot/js/site.js`: all behavior. Vanilla JS, no frameworks.
 - `wwwroot/images/`: artwork. `Talmy Overdrive.gif` has a space in its name, so keep references to it exact.
-- **Ezra** (notes feature): plan and status in `ProjectPlans/ezra.md`. Code in `Data/EzraDbContext.cs`, `Data/Migrations/`, `Models/Ezra/`, `Controllers/Ezra/`, `Views/Ezra/`, and `Bible/` (book data and the reference parser; `BibleBooks.Data.cs` is generated, so see the plan before editing it).
+- **Ezra** (notes feature): plan and status in `ProjectPlans/ezra.md`. Code in `Data/EzraDbContext.cs`, `Data/Migrations/`, `Models/Ezra/`, `Controllers/Ezra/`, `Views/Ezra/`, and `Bible/` (book data, the reference parser, and the Strong's parser and lexicon reader; `BibleBooks.Data.cs` is generated, so see the plan before editing it). The Strong's lexicon data isn't committed (CC BY-SA): it's downloaded to `App_Data/strongs/` and loaded with `dotnet run -- import-strongs App_Data/strongs` (see the plan).
 - `tests/Starfold.Tests/`: the xUnit tests. The app's csproj excludes `tests/**` so the test files don't compile into the app.
 - `App_Data/`: the local dev SQLite database (git-ignored). Don't put it in `data/`: on Windows that's the same folder as `Data/` (the code).
 

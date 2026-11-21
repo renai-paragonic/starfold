@@ -136,6 +136,14 @@ namespace starfold_mobile.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("definition");
 
+                    b.Property<string>("Derivation")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("derivation");
+
+                    b.Property<string>("KjvDef")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("kjv_def");
+
                     b.Property<string>("Lemma")
                         .IsRequired()
                         .HasColumnType("TEXT")

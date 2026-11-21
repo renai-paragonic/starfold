@@ -1,0 +1,43 @@
+@using starfold_mobile.Bible
+@model List<Note>
+@{
+    var entry = (StrongsEntry)ViewData["Entry"]!;
+    var known = (IReadOnlySet<string>)ViewData["Known"]!;
+    var hebrew = StrongsParser.IsHebrew(entry.Id);
+    ViewData["Title"] = $"{entry.Id} {entry.Lemma}";
+}
+<h1>@entry.Id <bdi lang="@(hebrew ? "hbo" : "grc")" class="ezra-lemma">@entry.Lemma</bdi></h1>
+<p class="ezra-meta">
+    <a asp-action="Index">All notes</a>
+    · <a href="@StrongsParser.BlbUrl(entry.Id)" target="_blank" rel="noopener">Blue Letter Bible (LSB)</a>
+</p>
+<dl class="ezra-lexicon">
+    @if (entry.Transliteration is not null)
+    {
+        <dt>Transliteration</dt>
+        <dd>@entry.Transliteration</dd>
+    }
+    @if (entry.Definition is not null)
+    {
+        <dt>Definition</dt>
+        <dd>@Html.Raw(StrongsParser.LinkMentions(entry.Definition, known))</dd>
+    }
+    @if (entry.Derivation is not null)
+    {
+        <dt>Derivation</dt>
+        <dd>@Html.Raw(StrongsParser.LinkMentions(entry.Derivation, known))</dd>
+    }
+    @if (entry.KjvDef is not null)
+    {
+        <dt>KJV renderings</dt>
+        <dd>@Html.Raw(StrongsParser.LinkMentions(entry.KjvDef, known))</dd>
+    }
+</dl>
+<h2>Notes</h2>
+<partial name="_NoteList" model="Model" />
+<p class="ezra-meta ezra-credit">
+    From James Strong's
+    @(hebrew ? "A Concise Dictionary of the Words in the Hebrew Bible (1894)" : "Dictionary of Greek Words (1890)"),
+    via <a href="https://github.com/openscriptures/strongs" target="_blank" rel="noopener">Open Scriptures</a> (CC BY-SA).
+    @(hebrew ? "From a source by David Instone-Brewer; edited by David Troidl." : "XML edition prepared by Ulrik Petersen.")
+</p>

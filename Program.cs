@@ -21,7 +21,20 @@ if (args is ["hash-password", ..])
     return 0;
 }
 
-var builder = WebApplication.CreateBuilder(args);
+// `dotnet run -- import-strongs <folder>` loads the Strong's lexicon (run
+// after the app's setup below, so it uses the same database and migrations).
+// Its args stay out of the builder: an absolute path like /data/strongs
+// would read as a config switch.
+var importStrongs = args is ["import-strongs", var folder] ? folder : null;
+if (args is ["import-strongs", ..] && importStrongs is null)
+{
+    Console.Error.WriteLine("Usage: dotnet run -- import-strongs <folder>");
+    return 1;
+}
+
+var builder = WebApplication.CreateBuilder(importStrongs is null ? args : []);
+// The import's ~14k inserts would otherwise each be logged in development.
+if (importStrongs is not null) builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews(o => o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()))
@@ -80,6 +93,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<EzraDbContext>();
     db.Database.Migrate();
     db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+    if (importStrongs is not null) return await StrongsImport.RunAsync(db, importStrongs);
 }
 
 app.UseForwardedHeaders();
