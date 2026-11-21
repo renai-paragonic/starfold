@@ -39,6 +39,10 @@ public class NoteSearchTests
         Assert.Equal(new NoteSearch.Suggestion("ref", "1 John 4:8", "1 John 4:8", 3), Suggest("grace 1 jn 4:8")[0]);
 
     [Fact]
+    public void Suggestions_stop_at_the_last_semicolon() =>
+        Assert.Equal(new NoteSearch.Suggestion("ref", "Romans 8", "Romans 8", 2), Assert.Single(Suggest("John 3:16; Rom 8")));
+
+    [Fact]
     public void Suggests_each_ref_of_a_comma_list() =>
         Assert.Equal(["Romans 8", "Romans 9"], Suggest("Rom 8, 9").Select(s => s.Value));
 

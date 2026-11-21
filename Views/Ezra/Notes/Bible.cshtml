@@ -5,7 +5,13 @@
     var book = BibleBooks.Get(r.Book);
     ViewData["Title"] = r.Format();
 }
-<h1>@r.Format()</h1>
+<div class="ezra-title-row">
+    <h1>@r.Format()</h1>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <a asp-action="New" asp-route-references="@r.Format()" asp-route-returnUrl="@Context.Request.Path" class="ezra-button">New note</a>
+    }
+</div>
 <p class="ezra-meta">
     <a asp-action="Index">All notes</a>
     @if (r.Chapter is not null)

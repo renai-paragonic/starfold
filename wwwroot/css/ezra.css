@@ -176,8 +176,9 @@ body {
 }
 
 /* Tag flyout */
-.ezra-tags { position: relative; }
-.ezra-tags .ezra-chips:not(:has(li)) { display: none; }
+.ezra-tags, .ezra-refs { position: relative; }
+.ezra-tags .ezra-chips:not(:has(li)),
+.ezra-refs .ezra-chips:not(:has(li)) { display: none; }
 
 .ezra-flyout {
     position: absolute;

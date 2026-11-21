@@ -37,9 +37,11 @@ public static class NoteSearch
     // words: scripture (the longest tail that parses, e.g. "love john 3:16"
     // -> John 3:16), then the Strong's entry for the last word (looked up by
     // the caller), then tags containing a tail of up to 3 words.
+    // Only the text after the last ";" counts, so in "John 3:16; Rom 8" the
+    // suggestion covers "Rom 8" and picking it leaves "John 3:16;" alone.
     public static List<Suggestion> Suggest(string? text, IEnumerable<string> tags, StrongsEntry? strongs)
     {
-        var words = Words(text);
+        var words = Words((text ?? "").Split(';')[^1]);
         var result = new List<Suggestion>();
         if (words.Length == 0) return result;
         string Tail(int k) => string.Join(" ", words[^k..]);

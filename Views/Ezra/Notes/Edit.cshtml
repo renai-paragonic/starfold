@@ -1,6 +1,7 @@
 @model NoteForm
 @{
     var noteId = ViewData["NoteId"] as int?;
+    var lemmas = (Dictionary<string, string>)ViewData["Lemmas"]!;
     ViewData["Title"] = noteId is null ? "New note" : "Edit note";
     ViewData["MainClass"] = "ezra-main-wide";
 }
@@ -29,7 +30,22 @@
         <ul id="tag-options" class="ezra-flyout" role="listbox" aria-label="Tags" hidden></ul>
     </div>
     <label asp-for="References"></label>
-    <input asp-for="References" autocomplete="off" placeholder="John 3:16-18, 21; Rom 8; Genesis; G26; H430" />
+    <div class="ezra-refs" data-suggest-url="/ezra/search/suggest">
+        <ul class="ezra-chips">
+            @foreach (var value in Model.ReferenceChips)
+            {
+                var strongs = starfold_mobile.Bible.StrongsParser.Normalize(value);
+                var label = strongs is not null && lemmas.TryGetValue(strongs, out var lemma) ? $"{strongs} {lemma}" : value;
+                <li class="@(strongs is null ? "ezra-chip ezra-chip-ref" : "ezra-chip ezra-chip-strongs")" data-kind="@(strongs is null ? "ref" : "strongs")">
+                    @label<input type="hidden" name="ReferenceChips" value="@(strongs ?? value)" />
+                    <button type="button" aria-label="Remove @label">×</button>
+                </li>
+            }
+        </ul>
+        <input asp-for="References" autocomplete="off" placeholder="John 3:16-18, 21; Rom 8; G26"
+               role="combobox" aria-expanded="false" aria-controls="ref-options" aria-autocomplete="list" />
+        <ul id="ref-options" class="ezra-flyout" role="listbox" aria-label="Scripture and Strong's" hidden></ul>
+    </div>
     <div class="ezra-tabs">
         <button type="button" data-mode="write" aria-pressed="true">Write</button>
         <button type="button" data-mode="preview" aria-pressed="false">Preview</button>
@@ -40,7 +56,12 @@
     </div>
     <div class="ezra-actions">
         <button type="submit" class="ezra-button">Save</button>
-        @if (noteId is null)
+        @if (Model.ReturnUrl is not null)
+        {
+            <input type="hidden" asp-for="ReturnUrl" />
+            <a href="@Model.ReturnUrl">Cancel</a>
+        }
+        else if (noteId is null)
         {
             <a asp-action="Index">Cancel</a>
         }

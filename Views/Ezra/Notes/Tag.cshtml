@@ -2,6 +2,12 @@
 @{
     ViewData["Title"] = ViewData["TagName"];
 }
-<h1>Tagged “@ViewData["TagName"]”</h1>
+<div class="ezra-title-row">
+    <h1>Tagged “@ViewData["TagName"]”</h1>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <a asp-action="New" asp-route-tag="@ViewData["TagName"]" asp-route-returnUrl="@Context.Request.Path" class="ezra-button">New note</a>
+    }
+</div>
 <p class="ezra-meta"><a asp-action="Index">All notes</a></p>
 <partial name="_NoteList" model="Model" />

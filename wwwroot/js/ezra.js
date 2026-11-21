@@ -1,4 +1,4 @@
-// Ezra: confirm before delete, the header search box, and the editor's live preview and mobile Write/Preview toggle.
+// Ezra: confirm before delete, the header search box, and the editor's live preview, mobile Write/Preview toggle, and tag and references chip boxes.
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('form[data-confirm]').forEach(form => {
         form.addEventListener('submit', e => {
@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const search = document.querySelector('.ezra-search');
-    if (search) setUpSearch(search);
+    // Search chips post as ?tag=, ?ref=, ?strongs=; Enter searches.
+    if (search) setUpSuggestBox(search, { inputName: kind => kind, enterSubmits: true });
 
     const editor = document.querySelector('.ezra-editor');
     if (!editor) return;
@@ -48,6 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tagBox = editor.querySelector('.ezra-tags');
     if (tagBox) setUpTags(tagBox);
+
+    // Scripture and Strong's chips only (tags have their own box). Enter
+    // never submits the note from here.
+    const refBox = editor.querySelector('.ezra-refs');
+    if (refBox) setUpSuggestBox(refBox, { kinds: ['ref', 'strongs'], inputName: () => 'ReferenceChips', enterSubmits: false });
 });
 
 // Tag chips with a searchable flyout (an ARIA combobox). Typing filters the
@@ -160,34 +166,36 @@ function setUpTags(box) {
     });
 }
 
-// The header search box: free text plus filter chips. As you type, the
-// server suggests tags, scripture and Strong's numbers that match the end of
-// the text (NoteSearch.Suggest); picking one swaps those words for a chip.
-// Each chip carries a hidden tag/ref/strongs input for the GET form. Enter
-// searches unless an option is highlighted with the arrow keys.
-function setUpSearch(form) {
-    const chips = form.querySelector('.ezra-chips');
-    const input = form.querySelector('[role="combobox"]');
-    const list = form.querySelector('[role="listbox"]');
+// Free text plus chips, for the header search box and the editor's
+// references box. As you type, the server suggests tags, scripture and
+// Strong's numbers that match the end of the text (NoteSearch.Suggest);
+// picking one swaps those words for a chip. Options:
+//   kinds        which suggestion kinds to offer (default: all)
+//   inputName    the hidden input name for a chip of a given kind
+//   enterSubmits whether Enter submits the form when no option is highlighted
+function setUpSuggestBox(box, { kinds = null, inputName, enterSubmits }) {
+    const chips = box.querySelector('.ezra-chips');
+    const input = box.querySelector('[role="combobox"]');
+    const list = box.querySelector('[role="listbox"]');
     const classes = { tag: 'ezra-chip', ref: 'ezra-chip ezra-chip-ref', strongs: 'ezra-chip ezra-chip-strongs' };
     let options = [];
     let active = -1;
     let timer;
     let latest = 0;
 
-    const applied = () => [...chips.querySelectorAll('input')].map(i => i.name + ':' + i.value.toLowerCase());
+    const applied = () => [...chips.children].map(li => li.dataset.kind + ':' + li.querySelector('input').value.toLowerCase());
 
     function fetchOptions() {
         clearTimeout(timer);
         const request = ++latest;
         const text = input.value;
         if (!text.trim()) return show([]);
-        fetch(form.dataset.suggestUrl + '?q=' + encodeURIComponent(text))
+        fetch(box.dataset.suggestUrl + '?q=' + encodeURIComponent(text))
             .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
             .then(found => {
                 if (request !== latest) return;
                 const have = applied();
-                show(found.filter(o => !have.includes(o.kind + ':' + o.value.toLowerCase())));
+                show(found.filter(o => (!kinds || kinds.includes(o.kind)) && !have.includes(o.kind + ':' + o.value.toLowerCase())));
             })
             .catch(() => { if (request === latest) show([]); });
     }
@@ -197,7 +205,7 @@ function setUpSearch(form) {
         active = -1;
         list.replaceChildren(...options.map((option, i) => {
             const li = document.createElement('li');
-            li.id = 'search-option-' + i;
+            li.id = list.id + '-' + i;
             li.setAttribute('role', 'option');
             const chip = Object.assign(document.createElement('span'), { className: classes[option.kind], textContent: option.label });
             li.append(chip);
@@ -218,7 +226,7 @@ function setUpSearch(form) {
     function highlight() {
         [...list.children].forEach((li, i) => li.setAttribute('aria-selected', String(i === active)));
         if (active < 0) return input.removeAttribute('aria-activedescendant');
-        input.setAttribute('aria-activedescendant', 'search-option-' + active);
+        input.setAttribute('aria-activedescendant', list.id + '-' + active);
         list.children[active].scrollIntoView({ block: 'nearest' });
     }
 
@@ -237,7 +245,8 @@ function setUpSearch(form) {
     function addChip(option) {
         const li = document.createElement('li');
         li.className = classes[option.kind];
-        const hidden = Object.assign(document.createElement('input'), { type: 'hidden', name: option.kind, value: option.value });
+        li.dataset.kind = option.kind;
+        const hidden = Object.assign(document.createElement('input'), { type: 'hidden', name: inputName(option.kind), value: option.value });
         const remove = Object.assign(document.createElement('button'), { type: 'button', textContent: '×' });
         remove.setAttribute('aria-label', 'Remove ' + option.label);
         li.append(option.label, hidden, remove);
@@ -263,9 +272,13 @@ function setUpSearch(form) {
             active = (active + (e.key === 'ArrowDown' ? 1 : -1) + options.length + 1) % (options.length + 1);
             if (active === options.length) active = -1; // back to the text
             highlight();
-        } else if (e.key === 'Enter' && isOpen && active >= 0) {
-            e.preventDefault();
-            pick(active);
+        } else if (e.key === 'Enter') {
+            if (isOpen && active >= 0) {
+                e.preventDefault();
+                pick(active);
+            } else if (!enterSubmits) {
+                e.preventDefault();
+            }
         } else if (e.key === 'Escape' && isOpen) {
             e.preventDefault();
             open(false);

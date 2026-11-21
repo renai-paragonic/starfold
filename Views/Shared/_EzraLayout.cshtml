@@ -15,7 +15,7 @@
             <ul class="ezra-chips">
                 @foreach (var chip in ViewData["SearchChips"] as List<starfold_mobile.Models.Ezra.NoteSearch.Chip> ?? [])
                 {
-                    <li class="@chip.CssClass">
+                    <li class="@chip.CssClass" data-kind="@chip.Kind">
                         @chip.Label<input type="hidden" name="@chip.Kind" value="@chip.Value" />
                         <button type="button" aria-label="Remove @chip.Label">×</button>
                     </li>

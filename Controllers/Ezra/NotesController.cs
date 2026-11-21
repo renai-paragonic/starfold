@@ -170,8 +170,17 @@ public class NotesController(EzraDbContext db) : Controller
         return View(notes);
     }
 
+    // The "New note" button on the Bible browse, Strong's and tag pages passes
+    // ?references= or ?tag= (pre-filled, and checked on save as usual) and
+    // ?returnUrl= (where Save and Cancel go back to).
     [Authorize, HttpGet("notes/new")]
-    public Task<IActionResult> New() => EditorView(new NoteForm(), null);
+    public Task<IActionResult> New(string? references, string? tag, string? returnUrl) =>
+        EditorView(new NoteForm
+        {
+            ReferenceChips = string.IsNullOrWhiteSpace(references) ? [] : [references.Trim()],
+            Tags = string.IsNullOrWhiteSpace(tag) ? [] : [TagName.Normalize(tag)],
+            ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null,
+        }, null);
 
     [Authorize, HttpPost("notes/new")]
     public async Task<IActionResult> New(NoteForm form)
@@ -186,6 +195,7 @@ public class NotesController(EzraDbContext db) : Controller
         SetRefs(note, refs, strongs);
         db.Notes.Add(note);
         await db.SaveChangesAsync();
+        if (Url.IsLocalUrl(form.ReturnUrl)) return LocalRedirect(form.ReturnUrl);
         return RedirectToAction(nameof(Show), new { id = note.Id, slug = note.Slug });
     }
 
@@ -200,8 +210,8 @@ public class NotesController(EzraDbContext db) : Controller
             BodyMd = note.BodyMd,
             IsPublic = note.IsPublic,
             Tags = [.. note.Tags.Select(t => t.Name).Order(StringComparer.OrdinalIgnoreCase)],
-            References = string.Join("; ", NoteRef.Sort(note.Refs).Select(r => r.ToScriptureRef().Format())
-                .Concat(StrongsParser.Sort(note.Strongs.Select(s => s.Id)))),
+            ReferenceChips = [.. NoteRef.Sort(note.Refs).Select(r => r.ToScriptureRef().Format())
+                .Concat(StrongsParser.Sort(note.Strongs.Select(s => s.Id)))],
         }, id);
     }
 
@@ -236,12 +246,15 @@ public class NotesController(EzraDbContext db) : Controller
     [Authorize, HttpPost("preview")]
     public IActionResult Preview(string? bodyMd) => Content(NoteMarkdown.ToHtml(bodyMd), "text/html");
 
-    // The editor needs every tag name for the flyout's suggestions.
+    // The editor needs every tag name for the flyout's suggestions, and the
+    // lemmas for its Strong's chips ("G26 ἀγάπη").
     private async Task<IActionResult> EditorView(NoteForm form, int? id)
     {
         ViewData["NoteId"] = id;
         ViewData["AllTags"] = (await db.Tags.Select(t => t.Name).ToListAsync())
             .Order(StringComparer.OrdinalIgnoreCase).ToList();
+        var ids = form.ReferenceChips.Select(StrongsParser.Normalize).OfType<string>().ToList();
+        ViewData["Lemmas"] = await db.Strongs.Where(s => ids.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.Lemma);
         return View("Edit", form);
     }
 
@@ -273,7 +286,7 @@ public class NotesController(EzraDbContext db) : Controller
     // the note isn't saved until they're fixed.
     private async Task<(List<ScriptureRef>, List<StrongsEntry>)> ParseRefs(NoteForm form)
     {
-        var (ids, rest) = StrongsParser.Extract(form.References);
+        var (ids, rest) = StrongsParser.Extract(form.AllReferences);
         var result = ReferenceParser.Parse(rest);
         foreach (var error in result.Errors)
             ModelState.AddModelError(nameof(form.References), error);

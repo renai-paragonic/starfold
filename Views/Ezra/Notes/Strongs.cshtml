@@ -6,7 +6,13 @@
     var hebrew = StrongsParser.IsHebrew(entry.Id);
     ViewData["Title"] = $"{entry.Id} {entry.Lemma}";
 }
-<h1>@entry.Id <bdi lang="@(hebrew ? "hbo" : "grc")" class="ezra-lemma">@entry.Lemma</bdi></h1>
+<div class="ezra-title-row">
+    <h1>@entry.Id <bdi lang="@(hebrew ? "hbo" : "grc")" class="ezra-lemma">@entry.Lemma</bdi></h1>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <a asp-action="New" asp-route-references="@entry.Id" asp-route-returnUrl="@Context.Request.Path" class="ezra-button">New note</a>
+    }
+</div>
 <p class="ezra-meta">
     <a asp-action="Index">All notes</a>
     · <a href="@StrongsParser.BlbUrl(entry.Id)" target="_blank" rel="noopener">Blue Letter Bible (LSB)</a>
