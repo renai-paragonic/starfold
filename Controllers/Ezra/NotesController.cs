@@ -133,6 +133,10 @@ public class NotesController(EzraDbContext db) : Controller
         return View(results);
     }
 
+    // The lexicon only changes on import, so it's read once. An empty one
+    // isn't kept, so suggestions start working once the import has run.
+    private static StrongsWords? strongsWords;
+
     // The search box's flyout options for the text typed so far (debounced in
     // ezra.js). Visitors only get tags that are on a public note.
     [HttpGet("search/suggest")]
@@ -141,7 +145,22 @@ public class NotesController(EzraDbContext db) : Controller
         var all = SignedIn;
         var tags = await db.Tags.Where(t => all || t.Notes.Any(n => n.IsPublic)).Select(t => t.Name).ToListAsync();
         var last = (q ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
-        var strongs = StrongsParser.Normalize(last) is string id ? await db.Strongs.FindAsync(id) : null;
+        List<StrongsEntry> strongs = [];
+        if (StrongsParser.Normalize(last) is string id)
+        {
+            if (await db.Strongs.FindAsync(id) is StrongsEntry entry) strongs.Add(entry);
+        }
+        else if (last is not null)
+        {
+            if (strongsWords is null)
+            {
+                var words = new StrongsWords(await db.Strongs
+                    .Select(s => new StrongsEntry { Id = s.Id, Lemma = s.Lemma, Transliteration = s.Transliteration })
+                    .ToListAsync());
+                if (words.Count > 0) strongsWords = words;
+            }
+            strongs = strongsWords?.Match(last) ?? [];
+        }
         return Json(NoteSearch.Suggest(q, tags, strongs));
     }
 

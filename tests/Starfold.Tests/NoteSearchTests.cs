@@ -25,7 +25,7 @@ public class NoteSearchTests
     private static readonly string[] Tags = ["Sermons", "Sermon on the Mount", "Greek", "Grace notes", "ἀγάπη"];
 
     private static List<NoteSearch.Suggestion> Suggest(string text, StrongsEntry? strongs = null) =>
-        NoteSearch.Suggest(text, Tags, strongs);
+        NoteSearch.Suggest(text, Tags, strongs is null ? [] : [strongs]);
 
     [Fact]
     public void Suggests_scripture_from_the_end_of_the_text()
@@ -64,6 +64,11 @@ public class NoteSearchTests
         var s = Suggest("love g26", new StrongsEntry { Id = "G26", Lemma = "ἀγάπη" });
         Assert.Contains(new NoteSearch.Suggestion("strongs", "G26", "G26 ἀγάπη", 1), s);
     }
+
+    [Fact]
+    public void Suggests_every_strongs_entry_it_is_given() =>
+        Assert.Equal(["G26", "G27"], NoteSearch.Suggest("agape", [], [
+            new StrongsEntry { Id = "G26", Lemma = "ἀγάπη" }, new StrongsEntry { Id = "G27", Lemma = "ἀγαπητός" }]).Select(s => s.Value));
 
     [Fact]
     public void Suggests_tags_containing_the_last_words_prefix_matches_first()

@@ -35,11 +35,12 @@ public static class NoteSearch
 
     // Suggestions for the text typed so far, checked against its trailing
     // words: scripture (the longest tail that parses, e.g. "love john 3:16"
-    // -> John 3:16), then the Strong's entry for the last word (looked up by
-    // the caller), then tags containing a tail of up to 3 words.
+    // -> John 3:16), then the Strong's entries for the last word (looked up
+    // by the caller, by number or transliteration), then tags containing a
+    // tail of up to 3 words.
     // Only the text after the last ";" counts, so in "John 3:16; Rom 8" the
     // suggestion covers "Rom 8" and picking it leaves "John 3:16;" alone.
-    public static List<Suggestion> Suggest(string? text, IEnumerable<string> tags, StrongsEntry? strongs)
+    public static List<Suggestion> Suggest(string? text, IEnumerable<string> tags, IEnumerable<StrongsEntry> strongs)
     {
         var words = Words((text ?? "").Split(';')[^1]);
         var result = new List<Suggestion>();
@@ -58,8 +59,7 @@ public static class NoteSearch
             break;
         }
 
-        if (strongs is not null)
-            result.Add(new(StrongsKind, strongs.Id, $"{strongs.Id} {strongs.Lemma}", 1));
+        result.AddRange(strongs.Select(s => new Suggestion(StrongsKind, s.Id, $"{s.Id} {s.Lemma}", 1)));
 
         var tagMatches = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         for (var k = 1; k <= Math.Min(3, words.Length); k++)
