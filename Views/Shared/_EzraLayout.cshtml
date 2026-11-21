@@ -11,6 +11,20 @@
 <body>
     <header class="ezra-header">
         <a href="/ezra" class="ezra-brand">Ezra</a>
+        <form action="/ezra/search" method="get" role="search" class="ezra-search" data-suggest-url="/ezra/search/suggest">
+            <ul class="ezra-chips">
+                @foreach (var chip in ViewData["SearchChips"] as List<starfold_mobile.Models.Ezra.NoteSearch.Chip> ?? [])
+                {
+                    <li class="@chip.CssClass">
+                        @chip.Label<input type="hidden" name="@chip.Kind" value="@chip.Value" />
+                        <button type="button" aria-label="Remove @chip.Label">×</button>
+                    </li>
+                }
+            </ul>
+            <input type="search" name="q" value="@ViewData["Query"]" placeholder="Search notes" aria-label="Search notes"
+                   autocomplete="off" role="combobox" aria-expanded="false" aria-controls="search-options" aria-autocomplete="list" />
+            <ul id="search-options" class="ezra-flyout" role="listbox" aria-label="Search filters" hidden></ul>
+        </form>
         @if (User.Identity?.IsAuthenticated == true)
         {
             <form asp-controller="Account" asp-action="Logout" method="post">

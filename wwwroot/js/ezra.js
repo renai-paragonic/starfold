@@ -1,10 +1,13 @@
-// Ezra: confirm before delete, and the editor's live preview and mobile Write/Preview toggle.
+// Ezra: confirm before delete, the header search box, and the editor's live preview and mobile Write/Preview toggle.
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('form[data-confirm]').forEach(form => {
         form.addEventListener('submit', e => {
             if (!confirm(form.dataset.confirm)) e.preventDefault();
         });
     });
+
+    const search = document.querySelector('.ezra-search');
+    if (search) setUpSearch(search);
 
     const editor = document.querySelector('.ezra-editor');
     if (!editor) return;
@@ -153,6 +156,121 @@ function setUpTags(box) {
         } else if (e.key === 'Backspace' && input.value === '') {
             chips.lastElementChild?.remove();
             if (open) render();
+        }
+    });
+}
+
+// The header search box: free text plus filter chips. As you type, the
+// server suggests tags, scripture and Strong's numbers that match the end of
+// the text (NoteSearch.Suggest); picking one swaps those words for a chip.
+// Each chip carries a hidden tag/ref/strongs input for the GET form. Enter
+// searches unless an option is highlighted with the arrow keys.
+function setUpSearch(form) {
+    const chips = form.querySelector('.ezra-chips');
+    const input = form.querySelector('[role="combobox"]');
+    const list = form.querySelector('[role="listbox"]');
+    const classes = { tag: 'ezra-chip', ref: 'ezra-chip ezra-chip-ref', strongs: 'ezra-chip ezra-chip-strongs' };
+    let options = [];
+    let active = -1;
+    let timer;
+    let latest = 0;
+
+    const applied = () => [...chips.querySelectorAll('input')].map(i => i.name + ':' + i.value.toLowerCase());
+
+    function fetchOptions() {
+        clearTimeout(timer);
+        const request = ++latest;
+        const text = input.value;
+        if (!text.trim()) return show([]);
+        fetch(form.dataset.suggestUrl + '?q=' + encodeURIComponent(text))
+            .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+            .then(found => {
+                if (request !== latest) return;
+                const have = applied();
+                show(found.filter(o => !have.includes(o.kind + ':' + o.value.toLowerCase())));
+            })
+            .catch(() => { if (request === latest) show([]); });
+    }
+
+    function show(found) {
+        options = found;
+        active = -1;
+        list.replaceChildren(...options.map((option, i) => {
+            const li = document.createElement('li');
+            li.id = 'search-option-' + i;
+            li.setAttribute('role', 'option');
+            const chip = Object.assign(document.createElement('span'), { className: classes[option.kind], textContent: option.label });
+            li.append(chip);
+            // Keep focus in the input, so the flyout doesn't close before the tap lands.
+            li.addEventListener('pointerdown', e => e.preventDefault());
+            li.addEventListener('click', () => pick(i));
+            return li;
+        }));
+        highlight();
+        open(options.length > 0);
+    }
+
+    function open(isOpen) {
+        list.hidden = !isOpen;
+        input.setAttribute('aria-expanded', String(isOpen));
+    }
+
+    function highlight() {
+        [...list.children].forEach((li, i) => li.setAttribute('aria-selected', String(i === active)));
+        if (active < 0) return input.removeAttribute('aria-activedescendant');
+        input.setAttribute('aria-activedescendant', 'search-option-' + active);
+        list.children[active].scrollIntoView({ block: 'nearest' });
+    }
+
+    function pick(i) {
+        const option = options[i];
+        if (!option) return;
+        addChip(option);
+        // Drop the words the chip replaces, keep the rest as free text.
+        const words = input.value.trim().split(/\s+/);
+        input.value = words.slice(0, Math.max(0, words.length - option.words)).join(' ');
+        if (input.value) input.value += ' ';
+        input.focus();
+        show([]);
+    }
+
+    function addChip(option) {
+        const li = document.createElement('li');
+        li.className = classes[option.kind];
+        const hidden = Object.assign(document.createElement('input'), { type: 'hidden', name: option.kind, value: option.value });
+        const remove = Object.assign(document.createElement('button'), { type: 'button', textContent: '×' });
+        remove.setAttribute('aria-label', 'Remove ' + option.label);
+        li.append(option.label, hidden, remove);
+        chips.append(li);
+    }
+
+    chips.addEventListener('click', e => {
+        const remove = e.target.closest('button');
+        if (!remove) return;
+        remove.closest('li').remove();
+        input.focus();
+    });
+
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(fetchOptions, 200);
+    });
+    input.addEventListener('blur', () => open(false));
+    input.addEventListener('keydown', e => {
+        const isOpen = !list.hidden;
+        if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && isOpen && options.length) {
+            e.preventDefault();
+            active = (active + (e.key === 'ArrowDown' ? 1 : -1) + options.length + 1) % (options.length + 1);
+            if (active === options.length) active = -1; // back to the text
+            highlight();
+        } else if (e.key === 'Enter' && isOpen && active >= 0) {
+            e.preventDefault();
+            pick(active);
+        } else if (e.key === 'Escape' && isOpen) {
+            e.preventDefault();
+            open(false);
+        } else if (e.key === 'Backspace' && input.value === '') {
+            chips.lastElementChild?.remove();
         }
     });
 }

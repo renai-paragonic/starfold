@@ -69,10 +69,8 @@ public class NotesController(EzraDbContext db) : Controller
             || (chapter is int c && (verse < 1 || verse > found.VersesIn(c)))) return NotFound();
         if (book != found.Slug) return RedirectToAction(nameof(Bible), new { book = found.Slug, chapter, verse });
 
-        var refs = db.NoteRefs.Where(r => r.Book == found.Number);
-        if (chapter is not null) refs = refs.Where(r => r.Chapter == null || r.Chapter == chapter);
-        if (verse is not null) refs = refs.Where(r => r.Chapter == null || r.VerseStart == null
-            || (r.VerseStart <= verse && r.VerseEnd >= verse));
+        var target = new ScriptureRef(found.Number, chapter, verse, verse);
+        var refs = NoteRef.Matching(db.NoteRefs, target);
 
         var all = SignedIn;
         var notes = await db.Notes
@@ -80,8 +78,71 @@ public class NotesController(EzraDbContext db) : Controller
             .Where(n => (all || n.IsPublic) && refs.Any(r => r.NoteId == n.Id))
             .OrderByDescending(n => n.UpdatedAt)
             .ToListAsync();
-        ViewData["Ref"] = new ScriptureRef(found.Number, chapter, verse, verse);
+        ViewData["Ref"] = target;
         return View(notes);
+    }
+
+    // Search: every text word must match a title, body or tag name, and every
+    // chip must match too. Chips come as ?tag=, ?ref= and ?strongs= (from the
+    // header's search box). Unreadable ref and Strong's chips are dropped;
+    // a chip that matches nothing just gives no results.
+    [HttpGet("search")]
+    public async Task<IActionResult> Search(string? q, string[] tag, [FromQuery(Name = "ref")] string[] refs, string[] strongs)
+    {
+        q = q?.Trim() ?? "";
+        var all = SignedIn;
+        var notes = db.Notes.Where(n => all || n.IsPublic);
+        var chips = new List<NoteSearch.Chip>();
+
+        foreach (var typed in tag.Select(TagName.Normalize).Where(n => n != "").Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            notes = notes.Where(n => n.Tags.Any(t => t.Name == typed)); // NOCASE
+            var name = await db.Tags.Where(t => t.Name == typed).Select(t => t.Name).FirstOrDefaultAsync() ?? typed;
+            chips.Add(new(NoteSearch.TagKind, name, name, "/ezra/tags/" + Uri.EscapeDataString(name)));
+        }
+        foreach (var text in refs.Distinct())
+        {
+            var parsed = ReferenceParser.Parse(text);
+            if (parsed.Errors.Count > 0 || parsed.Refs.Count == 0) continue;
+            // A cross-chapter range parses to several rows; any of them counts.
+            var noteIds = parsed.Refs.Select(r => NoteRef.Matching(db.NoteRefs, r).Select(x => x.NoteId)).Aggregate((a, b) => a.Concat(b));
+            notes = notes.Where(n => noteIds.Contains(n.Id));
+            var label = string.Join("; ", parsed.Refs.Select(r => r.Format()));
+            chips.Add(new(NoteSearch.RefKind, label, label, parsed.Refs[0].BrowsePath));
+        }
+        foreach (var id in strongs.Select(StrongsParser.Normalize).OfType<string>().Distinct())
+        {
+            notes = notes.Where(n => n.Strongs.Any(s => s.Id == id));
+            var entry = await db.Strongs.FindAsync(id);
+            chips.Add(new(NoteSearch.StrongsKind, id, entry is null ? id : $"{id} {entry.Lemma}", StrongsParser.BrowsePath(id)));
+        }
+
+        var patterns = NoteSearch.Patterns(q);
+        foreach (var p in patterns)
+            notes = notes.Where(n => EF.Functions.Like(n.Title, p, NoteSearch.Escape)
+                || EF.Functions.Like(n.BodyMd, p, NoteSearch.Escape)
+                || n.Tags.Any(t => EF.Functions.Like(t.Name, p, NoteSearch.Escape)));
+
+        ViewData["Query"] = q;
+        ViewData["SearchChips"] = chips;
+        if (patterns.Count == 0 && chips.Count == 0) return View(new List<Note>());
+        var results = await notes
+            .Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
+            .OrderByDescending(n => n.UpdatedAt)
+            .ToListAsync();
+        return View(results);
+    }
+
+    // The search box's flyout options for the text typed so far (debounced in
+    // ezra.js). Visitors only get tags that are on a public note.
+    [HttpGet("search/suggest")]
+    public async Task<IActionResult> Suggest(string? q)
+    {
+        var all = SignedIn;
+        var tags = await db.Tags.Where(t => all || t.Notes.Any(n => n.IsPublic)).Select(t => t.Name).ToListAsync();
+        var last = (q ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+        var strongs = StrongsParser.Normalize(last) is string id ? await db.Strongs.FindAsync(id) : null;
+        return Json(NoteSearch.Suggest(q, tags, strongs));
     }
 
     // A lexicon entry and the notes tagged with it. Other spellings ("g0026")

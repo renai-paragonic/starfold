@@ -48,7 +48,7 @@ The test: Every changed line should trace directly to the user's request.
 
 Verify by:
 - `dotnet build` with no new warnings.
-- `dotnet test` for the xUnit project in `tests/Starfold.Tests` (the Bible data and reference parser). It covers no UI, so the checks below still apply.
+- `dotnet test tests/Starfold.Tests` for the xUnit tests (the Bible data, reference parser and Strong's parser). Name the project: `starfold-mobile.sln` is git-ignored, so a bare `dotnet test` won't find the tests in a fresh clone. The tests cover no UI, so the checks below still apply.
 - `dotnet run` (http://localhost:5021) and check the page at **both** a phone width (~390px) and a desktop width (≥1024px). A change to one layout often breaks the other.
 - Testing interactions by both mouse and touch (profile press, Talmy jumps, accordion).
 
