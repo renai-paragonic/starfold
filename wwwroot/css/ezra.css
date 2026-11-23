@@ -1,40 +1,54 @@
-/* Ezra (notes). Separate from site.css, which locks the homepage to one screen. */
+/* Ezra (notes). Separate from site.css, which locks the homepage to one screen.
+   Look: a 90s web page. Cream windows on a starfield, in Renai's colors
+   (periwinkle tunic, gold trim, cream robe, coral pattern, violet linework). */
 :root {
-    --ezra-bg: #faf8f5;
-    --ezra-fg: #222;
-    --ezra-muted: #666;
-    --ezra-accent: #5b3fa8;
-    --ezra-error: #b00020;
-    --ezra-border: #ccc;
-    --ezra-chip-bg: #ece6f7;
-    --ezra-ref-bg: #f3e9d2;
-    --ezra-strongs-bg: #dcecf0;
+    --ezra-night: #0b0a1a;     /* behind the stars */
+    --ezra-bg: #f6f2e6;        /* robe cream: window body */
+    --ezra-fg: #3b3266;        /* linework violet: text */
+    --ezra-muted: #7a5c48;     /* skin, darkened for contrast */
+    --ezra-accent: #3d42a8;    /* deep periwinkle: links, primary */
+    --ezra-visited: #6b3f9e;
+    --ezra-periwinkle: #9195de;
+    --ezra-gold: #d9a94a;
+    --ezra-halo: #f3dcae;
+    --ezra-error: #b0402c;     /* coral, darkened for contrast */
+    --ezra-border: #b9b6d3;
+    --ezra-face: #e4e1ef;      /* button face (lavender "Win95 gray") */
+    --ezra-light: #fff;        /* bevel highlight */
+    --ezra-shade: #6e6a8a;     /* bevel shadow */
+    --ezra-chip-bg: #f9d9d1;   /* tags: coral */
+    --ezra-ref-bg: #f3dcae;    /* scripture: halo gold */
+    --ezra-strongs-bg: #dcdcf5; /* Strong's: periwinkle */
+    --ezra-ui: Verdana, Tahoma, Geneva, sans-serif;
+    --ezra-read: Georgia, "Times New Roman", Times, serif;
+    --ezra-mono: "Courier New", Courier, monospace;
 }
 
 * { box-sizing: border-box; }
 
 body {
     margin: 0;
-    background: var(--ezra-bg);
+    background: var(--ezra-night) url("/images/star-bg.gif") repeat;
     color: var(--ezra-fg);
-    font: 16px/1.5 system-ui, sans-serif;
+    font: 14px/1.5 var(--ezra-ui);
 }
 
+/* Header: sits on the starfield. */
 .ezra-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
-    border-bottom: 1px solid var(--ezra-border);
 }
 
 .ezra-brand {
-    color: var(--ezra-accent);
-    font-weight: 700;
+    color: var(--ezra-gold);
+    font: italic 700 28px/1 var(--ezra-read);
     text-decoration: none;
+    text-shadow: 0 0 8px rgba(243, 220, 174, 0.6);
 }
 
-/* Header search: chips and the text input share one pill-shaped box. */
+/* Header search: chips and the text input share one sunken field. */
 .ezra-search {
     position: relative;
     display: flex;
@@ -45,15 +59,15 @@ body {
     min-width: 0;
     max-width: 420px;
     margin: 0 12px;
-    padding: 3px 10px;
-    border: 1px solid var(--ezra-border);
-    border-radius: 16px;
+    padding: 3px 6px;
+    border: 2px solid;
+    border-color: var(--ezra-shade) var(--ezra-light) var(--ezra-light) var(--ezra-shade);
     background: #fff;
 }
 
-.ezra-search:focus-within { border-color: var(--ezra-accent); }
+.ezra-search:focus-within { outline: 1px dotted var(--ezra-halo); outline-offset: 2px; }
 .ezra-search .ezra-chips { display: contents; }
-.ezra-search .ezra-chip { padding: 0 4px 0 8px; }
+.ezra-search .ezra-chip { padding: 0 4px 0 6px; }
 
 .ezra-search input {
     flex: 1;
@@ -62,7 +76,7 @@ body {
     border: none;
     outline: none;
     background: none;
-    font: inherit; /* 16px: smaller makes iOS zoom on focus */
+    font: 16px var(--ezra-ui); /* 16px: smaller makes iOS zoom on focus */
 }
 
 .ezra-search-text { align-self: center; color: var(--ezra-muted); }
@@ -70,15 +84,69 @@ body {
 .ezra-link-button {
     border: none;
     background: none;
-    color: var(--ezra-accent);
+    color: var(--ezra-halo);
     font: inherit;
+    text-decoration: underline;
     cursor: pointer;
 }
 
+/* The page is a cream window with a Win98-style title bar. */
 .ezra-main {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 16px;
+    max-width: min(1200px, 100% - 32px);
+    margin: 0 auto 24px;
+    padding: 0;
+}
+
+.ezra-window {
+    border: 2px solid;
+    border-color: var(--ezra-light) var(--ezra-shade) var(--ezra-shade) var(--ezra-light);
+    background: var(--ezra-bg);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
+}
+
+.ezra-window-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 3px 4px 3px 8px;
+    background: linear-gradient(90deg, var(--ezra-accent), var(--ezra-periwinkle));
+    color: #fff;
+    font: 700 13px/18px Tahoma, Verdana, sans-serif;
+    text-shadow: 1px 1px 0 #2a2d70;
+}
+
+.ezra-window-title {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.ezra-window-buttons { display: flex; gap: 2px; }
+
+.ezra-window-buttons span {
+    width: 18px;
+    height: 16px;
+    border: 1px solid;
+    border-color: var(--ezra-light) var(--ezra-shade) var(--ezra-shade) var(--ezra-light);
+    background: var(--ezra-face);
+    color: var(--ezra-fg);
+    font: 700 11px/14px Tahoma, sans-serif;
+    text-align: center;
+    text-shadow: none;
+}
+
+.ezra-window-body { padding: 16px; }
+
+.ezra-main h1 { margin: 0 0 12px; font-size: 22px; }
+
+/* Portal-style section bar */
+.ezra-main h2 {
+    margin: 24px 0 8px;
+    padding: 2px 8px;
+    border-left: 4px solid var(--ezra-gold);
+    background: var(--ezra-strongs-bg);
+    font-size: 15px;
 }
 
 .ezra-form {
@@ -88,17 +156,43 @@ body {
     max-width: 360px;
 }
 
-.ezra-form input,
-.ezra-form button {
-    font: inherit;
-    padding: 8px 10px;
+.ezra-form input {
+    padding: 6px 8px;
+    border: 2px solid;
+    border-color: var(--ezra-shade) var(--ezra-light) var(--ezra-light) var(--ezra-shade);
+    font: 16px var(--ezra-ui);
+}
+
+/* Beveled buttons */
+.ezra-form button,
+.ezra-button,
+.ezra-danger,
+.ezra-tabs button {
+    display: inline-block;
+    padding: 4px 14px;
+    border: 2px solid;
+    border-color: var(--ezra-light) var(--ezra-shade) var(--ezra-shade) var(--ezra-light);
+    border-radius: 0;
+    background: var(--ezra-face);
+    color: var(--ezra-fg);
+    font: 700 14px var(--ezra-ui);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.ezra-form button:active,
+.ezra-button:active,
+.ezra-danger:active,
+.ezra-tabs button:active,
+.ezra-tabs button[aria-pressed="true"] {
+    border-color: var(--ezra-shade) var(--ezra-light) var(--ezra-light) var(--ezra-shade);
 }
 
 .ezra-error { color: var(--ezra-error); }
 .ezra-error ul { margin: 0; padding-left: 20px; }
 
 /* Notes list and note page */
-.ezra-main-wide { max-width: 1200px; }
+.ezra-main-wide { max-width: min(1200px, 100% - 32px); }
 
 .ezra-title-row {
     display: flex;
@@ -107,35 +201,26 @@ body {
     gap: 12px;
 }
 
-.ezra-button {
-    display: inline-block;
-    padding: 6px 14px;
-    border: 1px solid var(--ezra-accent);
-    border-radius: 4px;
-    background: var(--ezra-accent);
-    color: #fff;
-    font: inherit;
-    text-decoration: none;
-    cursor: pointer;
-}
+.ezra-title-row h1 { margin-bottom: 0; }
 
-.ezra-meta { color: var(--ezra-muted); font-size: 14px; }
+.ezra-meta { color: var(--ezra-muted); font-size: 12px; }
 
 .ezra-badge {
     display: inline-block;
-    padding: 0 6px;
-    border: 1px solid var(--ezra-border);
-    border-radius: 4px;
-    color: var(--ezra-muted);
-    font-size: 12px;
+    padding: 0 4px;
+    border: 1px solid var(--ezra-error);
+    color: var(--ezra-error);
+    font-size: 10px;
+    font-weight: 700;
     text-transform: uppercase;
 }
 
 .ezra-note-list { list-style: none; margin: 0; padding: 0; }
-.ezra-note-list li { padding: 10px 0; border-bottom: 1px solid var(--ezra-border); }
-.ezra-note-list a { margin-right: 8px; font-weight: 600; }
+.ezra-note-list li { padding: 8px 0; border-bottom: 1px dotted var(--ezra-border); }
+.ezra-note-list a { margin-right: 8px; font-weight: 700; }
 
 .ezra-main a:not(.ezra-button) { color: var(--ezra-accent); }
+.ezra-main a:not(.ezra-button):visited { color: var(--ezra-visited); }
 
 /* Tag chips (links on notes, removable in the editor) */
 .ezra-chips {
@@ -150,12 +235,16 @@ body {
 .ezra-chip {
     display: inline-flex;
     align-items: center;
-    padding: 2px 10px;
-    border-radius: 999px;
+    padding: 0 8px;
+    border: 1px solid rgba(59, 50, 102, 0.35);
     background: var(--ezra-chip-bg);
-    font-size: 14px;
+    color: var(--ezra-fg);
+    font-size: 12px;
     text-decoration: none;
 }
+
+.ezra-main a.ezra-chip:link,
+.ezra-main a.ezra-chip:visited { color: var(--ezra-fg); }
 
 .ezra-chip-ref { background: var(--ezra-ref-bg); }
 .ezra-chip-strongs { background: var(--ezra-strongs-bg); }
@@ -175,7 +264,7 @@ body {
     cursor: pointer;
 }
 
-/* Tag flyout */
+/* Tag flyout: a plain list box, Win95 selection colors. */
 .ezra-tags, .ezra-refs { position: relative; }
 .ezra-tags .ezra-chips:not(:has(li)),
 .ezra-refs .ezra-chips:not(:has(li)) { display: none; }
@@ -188,32 +277,32 @@ body {
     z-index: 10;
     max-height: 40vh;
     margin: 2px 0 0;
-    padding: 4px 0;
+    padding: 2px 0;
     overflow-y: auto;
-    border: 1px solid var(--ezra-border);
-    border-radius: 4px;
+    border: 1px solid var(--ezra-fg);
     background: #fff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
+    color: var(--ezra-fg);
     list-style: none;
 }
 
 .ezra-flyout li {
-    padding: 8px 12px;
+    padding: 6px 10px;
     cursor: pointer;
 }
 
-.ezra-flyout li[aria-selected="true"] { background: var(--ezra-chip-bg); }
+.ezra-flyout li[aria-selected="true"] { background: var(--ezra-accent); color: #fff; }
 
 .ezra-flyout li[aria-disabled="true"] {
     color: var(--ezra-muted);
     cursor: default;
 }
 
-/* Rendered Markdown */
-.ezra-prose { overflow-wrap: anywhere; }
+/* Rendered Markdown: a reading face, not the UI one. */
+.ezra-prose { overflow-wrap: anywhere; font: 17px/1.6 var(--ezra-read); }
 .ezra-prose img { max-width: 100%; }
-.ezra-prose code { font-family: ui-monospace, monospace; font-size: 0.9em; }
-.ezra-prose pre { overflow-x: auto; padding: 8px 12px; background: #f0ede8; }
+.ezra-prose code { font-family: var(--ezra-mono); font-size: 0.9em; }
+.ezra-prose pre { overflow-x: auto; padding: 8px 12px; border: 1px solid var(--ezra-border); background: #fff; }
 /* Wide tables scroll sideways instead of stretching the page on phones. */
 .ezra-prose table {
     display: block;
@@ -227,18 +316,19 @@ body {
     padding: 4px 10px;
     border: 1px solid var(--ezra-border);
 }
-.ezra-prose mark { background: #fff3a3; }
+.ezra-prose th { background: var(--ezra-strongs-bg); }
+.ezra-prose mark { background: var(--ezra-halo); }
 .ezra-prose blockquote {
     margin: 0 0 1em;
     padding-left: 12px;
-    border-left: 3px solid var(--ezra-border);
+    border-left: 3px solid var(--ezra-gold);
     color: var(--ezra-muted);
 }
 
 /* Strong's entry */
 .ezra-lemma { font-weight: 400; }
-.ezra-lexicon dt { margin-top: 12px; color: var(--ezra-muted); font-size: 14px; }
-.ezra-lexicon dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+.ezra-lexicon dt { margin-top: 12px; color: var(--ezra-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.ezra-lexicon dd { margin: 2px 0 0; overflow-wrap: anywhere; font: 16px/1.5 var(--ezra-read); }
 .ezra-credit { margin-top: 32px; }
 
 /* Editor */
@@ -247,16 +337,18 @@ body {
 .ezra-editor input[type="text"],
 .ezra-editor textarea {
     width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--ezra-border);
-    border-radius: 4px;
+    padding: 6px 8px;
+    border: 2px solid;
+    border-color: var(--ezra-shade) var(--ezra-light) var(--ezra-light) var(--ezra-shade);
+    border-radius: 0;
     background: #fff;
-    font: inherit;
+    color: var(--ezra-fg);
+    font: 16px var(--ezra-ui);
 }
 
 .ezra-editor textarea {
     min-height: 60vh;
-    font-family: ui-monospace, monospace;
+    font-family: var(--ezra-mono);
     font-size: 15px;
     resize: vertical;
 }
@@ -266,50 +358,36 @@ body {
 .ezra-preview {
     min-height: 60vh;
     padding: 8px 12px;
-    border: 1px solid var(--ezra-border);
-    border-radius: 4px;
+    border: 2px solid;
+    border-color: var(--ezra-shade) var(--ezra-light) var(--ezra-light) var(--ezra-shade);
     background: #fff;
 }
 
-.ezra-tabs button {
-    padding: 4px 12px;
-    border: none;
-    border-bottom: 2px solid transparent;
-    background: none;
-    color: var(--ezra-muted);
-    font: inherit;
-    cursor: pointer;
-}
-
-.ezra-tabs button[aria-pressed="true"] {
-    border-bottom-color: var(--ezra-accent);
-    color: var(--ezra-fg);
-}
+.ezra-tabs button { font-weight: 400; }
+.ezra-tabs button[aria-pressed="true"] { background: var(--ezra-bg); font-weight: 700; }
 
 .ezra-actions { display: flex; align-items: center; gap: 16px; }
 
 .ezra-delete { margin-top: 32px; }
 
-.ezra-danger {
-    padding: 6px 14px;
-    border: 1px solid var(--ezra-error);
-    border-radius: 4px;
-    background: none;
-    color: var(--ezra-error);
-    font: inherit;
-    cursor: pointer;
-}
+.ezra-danger { color: var(--ezra-error); }
 
-/* Mobile: Write and Preview take turns. */
+/* Mobile: Write and Preview take turns, and the window fills the width. */
 @media (max-width: 767px) {
     .ezra-tabs { display: flex; gap: 8px; }
     .ezra-panes[data-mode="write"] .ezra-preview,
     .ezra-panes[data-mode="preview"] textarea { display: none; }
+    .ezra-main, .ezra-main-wide { max-width: calc(100% - 16px); }
+    .ezra-brand { font-size: 22px; }
+    .ezra-window-buttons { display: none; }
+    .ezra-window-body { padding: 12px; }
 }
 
 /* Desktop: editor and preview side by side. */
 @media (min-width: 768px) {
     .ezra-tabs { display: none; }
+    /* The window is wide, but reading text keeps a comfortable line length. */
+    .ezra-prose, .ezra-lexicon dd { max-width: 75ch; }
     .ezra-panes {
         display: grid;
         grid-template-columns: 1fr 1fr;

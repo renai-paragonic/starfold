@@ -66,3 +66,6 @@ compose.yaml
 
 # Ezra / shared SQLite database (local dev)
 /App_Data/
+
+# Ezra star background: source and license unknown, so it's copied in on deploy
+/wwwroot/images/star-bg.gif
