@@ -1,0 +1,45 @@
+@using starfold_mobile.Controllers.Ezra
+@model List<TagsController.Row>
+@{
+    ViewData["Title"] = "Manage tags";
+    List<Folder> path = [new("Notes", "/ezra"), new("Tags", "/ezra?view=tags"), new("Manage tags", "")];
+}
+<h1>Manage tags</h1>
+<partial name="~/Views/Ezra/Notes/_Address.cshtml" model="path" />
+@if (TempData["Message"] is string message)
+{
+    <p class="ezra-notice" role="status">@message</p>
+}
+@if (ViewData["Error"] is string error)
+{
+    <p class="ezra-error" role="alert">@error</p>
+}
+@if (Model.Count == 0)
+{
+    <p class="ezra-meta">No tags yet.</p>
+}
+else
+{
+    @* The checkboxes belong to this form (form="merge"), so the row forms
+       for Rename and Delete don't have to nest inside it. *@
+    <form id="merge" asp-action="Merge" method="get"></form>
+    <ul class="ezra-tag-admin">
+        @foreach (var row in Model)
+        {
+            <li>
+                <input type="checkbox" name="ids" value="@row.Id" form="merge" aria-label="Merge @row.Name" />
+                <a href="/ezra/tags/@Uri.EscapeDataString(row.Name)" class="ezra-tag-name">@row.Name</a>
+                <span class="ezra-meta">@row.Notes @(row.Notes == 1 ? "note" : "notes")</span>
+                <form asp-action="Rename" asp-route-id="@row.Id" method="post" class="ezra-tag-rename">
+                    <input type="text" name="name" value="@row.Name" maxlength="@TagName.MaxLength" required aria-label="New name for @row.Name" />
+                    <button type="submit" class="ezra-button">Rename</button>
+                </form>
+                <form asp-action="Delete" asp-route-id="@row.Id" method="post"
+                      data-confirm="Delete tag “@row.Name” from @row.Notes @(row.Notes == 1 ? "note" : "notes")? The notes stay.">
+                    <button type="submit" class="ezra-danger">Delete</button>
+                </form>
+            </li>
+        }
+    </ul>
+    <p><button type="submit" form="merge" class="ezra-button">Merge ticked tags…</button></p>
+}

@@ -374,8 +374,9 @@ body {
     font-weight: 700;
 }
 
-/* Icons | List sits at the right edge (it's always last in the toolbar). */
-.ezra-toolbar .ezra-layout-toggle { margin-left: auto; }
+/* Icons | List and Manage tags sit at the right edge (each is last in its toolbar). */
+.ezra-toolbar .ezra-layout-toggle,
+.ezra-toolbar .ezra-toolbar-end { margin-left: auto; }
 
 .ezra-icons {
     display: grid;
@@ -423,6 +424,50 @@ body {
 .ezra-icon:hover .ezra-icon-label,
 .ezra-icon:focus-visible .ezra-icon-label { background: var(--ezra-accent); color: #fff; }
 .ezra-icon:focus-visible { outline: 1px dotted var(--ezra-fg); }
+
+/* Tag admin: one row per tag. Tick (for merge), name, count, rename, delete. */
+.ezra-notice {
+    padding: 4px 8px;
+    border-left: 4px solid var(--ezra-gold);
+    background: var(--ezra-halo);
+}
+
+.ezra-tag-admin { margin: 0; padding: 0; list-style: none; }
+
+.ezra-tag-admin li {
+    display: grid;
+    grid-template-columns: auto minmax(8em, 1fr) 6em minmax(0, 24em) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px dotted var(--ezra-border);
+}
+
+.ezra-tag-name { font-weight: 700; overflow-wrap: anywhere; }
+
+.ezra-tag-rename { display: flex; gap: 6px; margin: 0; }
+
+.ezra-tag-rename input { flex: 1; min-width: 0; }
+
+.ezra-tag-rename input,
+.ezra-merge input[type="text"] {
+    padding: 3px 6px;
+    border: 2px solid;
+    border-color: var(--ezra-shade) var(--ezra-light) var(--ezra-light) var(--ezra-shade);
+    border-radius: 0;
+    background: #fff;
+    color: var(--ezra-fg);
+    font: 16px var(--ezra-ui); /* 16px: smaller makes iOS zoom on focus */
+}
+
+.ezra-merge fieldset {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 360px;
+    margin: 0 0 12px;
+    border: 2px groove var(--ezra-border);
+}
 
 /* Strong's entry */
 .ezra-lemma { font-weight: 400; }
@@ -512,6 +557,9 @@ body {
     /* Four icons across at 390px. */
     .ezra-icons { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px 4px; padding: 8px; }
     .ezra-icon img { width: 40px; height: 40px; }
+    /* Tag admin rows take two lines: tick, name, count; then rename, delete. */
+    .ezra-tag-admin li { grid-template-columns: auto 1fr auto; row-gap: 4px; }
+    .ezra-tag-rename { grid-column: 2; }
 }
 
 /* Desktop: editor and preview side by side. */

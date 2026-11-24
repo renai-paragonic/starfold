@@ -43,6 +43,7 @@ public class NotesController(EzraDbContext db) : Controller
             Folders = NoteFolders.Root(notes, view),
             Empty = "No notes yet.",
             NewNote = true,
+            ManageTags = view == NoteFolders.Tags,
         });
     }
 

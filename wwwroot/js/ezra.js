@@ -1,9 +1,14 @@
-// Ezra: confirm before delete, the header search box, and the editor's live preview, mobile Write/Preview toggle, and tag and references chip boxes.
+// Ezra: confirm before delete, the tag merge's new-name box, the header search box, and the editor's live preview, mobile Write/Preview toggle, and tag and references chip boxes.
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('form[data-confirm]').forEach(form => {
         form.addEventListener('submit', e => {
             if (!confirm(form.dataset.confirm)) e.preventDefault();
         });
+    });
+
+    // Typing in a box picks its radio button (the tag merge's "A new name").
+    document.querySelectorAll('input[data-check]').forEach(input => {
+        input.addEventListener('input', () => { document.getElementById(input.dataset.check).checked = true; });
     });
 
     const search = document.querySelector('.ezra-search');

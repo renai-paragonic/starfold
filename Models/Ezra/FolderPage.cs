@@ -16,6 +16,8 @@ public class FolderPage
     public List<Note> Files { get; init; } = [];
     public string Empty { get; init; } = "This folder is empty.";
     public string? LsbUrl { get; init; }
+    // The Tags view's "Manage tags" button (signed in).
+    public bool ManageTags { get; init; }
     // "New note" (signed in). A reference or tag pre-fills the editor, and
     // then Save and Cancel come back to this folder.
     public bool NewNote { get; init; }

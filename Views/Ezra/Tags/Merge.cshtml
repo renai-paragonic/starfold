@@ -1,0 +1,45 @@
+@using starfold_mobile.Controllers.Ezra
+@model List<TagsController.Row>
+@{
+    ViewData["Title"] = "Merge tags";
+    var keep = ViewData["Keep"] as int?;
+    List<Folder> path = [new("Notes", "/ezra"), new("Tags", "/ezra?view=tags"), new("Manage tags", "/ezra/tags"), new("Merge", "")];
+}
+<h1>Merge tags</h1>
+<partial name="~/Views/Ezra/Notes/_Address.cshtml" model="path" />
+@if (TempData["Message"] is string message)
+{
+    <p class="ezra-notice" role="status">@message</p>
+}
+@if (ViewData["Error"] is string error)
+{
+    <p class="ezra-error" role="alert">@error</p>
+}
+<p>Every note with one of these tags will carry the one you keep instead. The others are deleted.</p>
+<form asp-action="Merge" method="post" class="ezra-merge">
+    @foreach (var row in Model)
+    {
+        <input type="hidden" name="ids" value="@row.Id" />
+    }
+    <fieldset>
+        <legend>Keep the name</legend>
+        @foreach (var row in Model)
+        {
+            <label class="ezra-check">
+                <input type="radio" name="keep" value="@row.Id" checked="@(keep == row.Id)" />
+                @row.Name <span class="ezra-meta">(@row.Notes @(row.Notes == 1 ? "note" : "notes"))</span>
+            </label>
+        }
+        <label class="ezra-check">
+            <input type="radio" name="keep" value="" id="keep-new" checked="@(keep is null)" />
+            A new name:
+        </label>
+        @* Typing here picks "A new name" (ezra.js). *@
+        <input type="text" name="newName" value="@ViewData["NewName"]" maxlength="@TagName.MaxLength"
+               aria-label="New name" data-check="keep-new" />
+    </fieldset>
+    <div class="ezra-actions">
+        <button type="submit" class="ezra-button">Merge</button>
+        <a asp-action="Index">Cancel</a>
+    </div>
+</form>

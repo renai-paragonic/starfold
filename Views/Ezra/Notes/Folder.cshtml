@@ -36,6 +36,10 @@
         {
             <partial name="_LayoutToggle" />
         }
+        @if (signedIn && Model.ManageTags)
+        {
+            <a href="/ezra/tags" class="ezra-button ezra-toolbar-end">Manage tags</a>
+        }
     </div>
 }
 @if (Model.Folders.Count == 0 && Model.Entries.Count == 0 && Model.Files.Count == 0)
