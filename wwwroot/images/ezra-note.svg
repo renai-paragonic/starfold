@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- A note page with a folded corner, in Ezra's colors. -->
+  <path d="M6.5 2.5h14l5 5v22h-19z" fill="#fff" stroke="#3b3266"/>
+  <path d="M20.5 2.5v5h5" fill="#e4e1ef" stroke="#3b3266"/>
+  <path d="M9 11.5h13M9 14.5h13M9 17.5h13M9 20.5h13M9 23.5h9" stroke="#9195de"/>
+</svg>

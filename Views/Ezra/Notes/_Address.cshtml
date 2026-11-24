@@ -1,0 +1,21 @@
+@model List<Folder>
+@* The folder view's address line, from "Notes" down to this page. Labels
+   are in bdi so a Hebrew lemma doesn't reorder the path around it. *@
+<nav class="ezra-address" aria-label="Folder path">
+    <span>Address</span>
+    <ol>
+        @foreach (var step in Model)
+        {
+            <li>
+                @if (step.Url == "")
+                {
+                    <bdi aria-current="page">@step.Label</bdi>
+                }
+                else
+                {
+                    <a href="@step.Url"><bdi>@step.Label</bdi></a>
+                }
+            </li>
+        }
+    </ol>
+</nav>

@@ -1,0 +1,11 @@
+@* Icons | List for a page's notes. Both come back to this page, query included. *@
+@{
+    var list = Context.Request.Cookies[NoteFolders.LayoutCookie] == "list";
+    var here = Context.Request.Path.Value + Context.Request.QueryString.Value;
+}
+<span class="ezra-toolbar-group ezra-layout-toggle" role="group" aria-label="Show notes as">
+    <a asp-action="Layout" asp-route-layout="icons" asp-route-returnUrl="@here" class="ezra-button ezra-icon-button" title="Icons"
+       aria-current="@(list ? null : "true")"><img src="/images/ezra-note.svg" alt="Icons" /></a>
+    <a asp-action="Layout" asp-route-layout="list" asp-route-returnUrl="@here" class="ezra-button ezra-icon-button" title="List"
+       aria-current="@(list ? "true" : null)"><img src="/images/ezra-list.svg" alt="List" /></a>
+</span>

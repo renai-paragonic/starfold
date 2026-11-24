@@ -3,6 +3,7 @@
 @{
     var entry = (StrongsEntry)ViewData["Entry"]!;
     var known = (IReadOnlySet<string>)ViewData["Known"]!;
+    var path = (List<Folder>)ViewData["Path"]!;
     var hebrew = StrongsParser.IsHebrew(entry.Id);
     ViewData["Title"] = $"{entry.Id} {entry.Lemma}";
 }
@@ -13,9 +14,9 @@
         <a asp-action="New" asp-route-references="@entry.Id" asp-route-returnUrl="@Context.Request.Path" class="ezra-button">New note</a>
     }
 </div>
+<partial name="_Address" model="path" />
 <p class="ezra-meta">
-    <a asp-action="Index">All notes</a>
-    · <a href="@StrongsParser.BlbUrl(entry.Id)" target="_blank" rel="noopener">Blue Letter Bible (LSB)</a>
+    <a href="@StrongsParser.BlbUrl(entry.Id)" target="_blank" rel="noopener">Blue Letter Bible (LSB)</a>
 </p>
 <dl class="ezra-lexicon">
     @if (entry.Transliteration is not null)
@@ -40,7 +41,27 @@
     }
 </dl>
 <h2>Notes</h2>
-<partial name="_NoteList" model="Model" />
+@if (Model.Count == 0)
+{
+    <p class="ezra-meta">No notes yet.</p>
+}
+else
+{
+    <div class="ezra-toolbar"><partial name="_LayoutToggle" /></div>
+    if (Context.Request.Cookies[NoteFolders.LayoutCookie] == "list")
+    {
+        <partial name="_NoteList" model="Model" />
+    }
+    else
+    {
+        <ul class="ezra-icons">
+            @foreach (var note in Model)
+            {
+                <partial name="_NoteFile" model="note" />
+            }
+        </ul>
+    }
+}
 <p class="ezra-meta ezra-credit">
     From James Strong's
     @(hebrew ? "A Concise Dictionary of the Words in the Hebrew Bible (1894)" : "Dictionary of Greek Words (1890)"),

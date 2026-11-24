@@ -1,0 +1,81 @@
+@using starfold_mobile.Bible
+@model FolderPage
+@{
+    ViewData["Title"] = Model.Title;
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var returnHere = Model.NewReferences is not null || Model.NewTag is not null;
+    // The Icons | List toggle only matters when the folder holds notes.
+    var list = Model.Files.Count > 0 && Context.Request.Cookies[NoteFolders.LayoutCookie] == "list";
+}
+<div class="ezra-title-row">
+    <h1>@Model.Title</h1>
+    @if (signedIn && Model.NewNote)
+    {
+        <a asp-action="New" asp-route-references="@Model.NewReferences" asp-route-tag="@Model.NewTag"
+           asp-route-returnUrl="@(returnHere ? Context.Request.Path.Value : null)" class="ezra-button">New note</a>
+    }
+</div>
+<partial name="_Address" model="Model.Path" />
+@if (Model.Toggles.Count > 0 || Model.Files.Count > 0 || Model.LsbUrl is not null)
+{
+    <div class="ezra-toolbar">
+        @if (Model.Toggles.Count > 0)
+        {
+            <span class="ezra-toolbar-group">
+                @foreach (var toggle in Model.Toggles)
+                {
+                    <a href="@toggle.Url" class="ezra-button" aria-current="@(toggle.Label == Model.PressedToggle ? "true" : null)">@toggle.Label</a>
+                }
+            </span>
+        }
+        @if (Model.LsbUrl is not null)
+        {
+            <a href="@Model.LsbUrl" target="_blank" rel="noopener" class="ezra-meta">Read in the LSB</a>
+        }
+        @if (Model.Files.Count > 0)
+        {
+            <partial name="_LayoutToggle" />
+        }
+    </div>
+}
+@if (Model.Folders.Count == 0 && Model.Entries.Count == 0 && Model.Files.Count == 0)
+{
+    <p class="ezra-meta">@Model.Empty</p>
+}
+else if (list)
+{
+    @* Folders stay icons; only the notes switch to the plain list. *@
+    @if (Model.Folders.Count > 0)
+    {
+        <ul class="ezra-icons">
+            @foreach (var folder in Model.Folders)
+            {
+                <partial name="_FolderIcon" model="folder" />
+            }
+        </ul>
+    }
+    <partial name="_NoteList" model="Model.Files" />
+}
+else
+{
+    <ul class="ezra-icons">
+        @foreach (var folder in Model.Folders)
+        {
+            <partial name="_FolderIcon" model="folder" />
+        }
+        @* Labeled like a Strong's chip: "G26 ἀγάπη". *@
+        @foreach (var entry in Model.Entries)
+        {
+            <li>
+                <a href="@StrongsParser.BrowsePath(entry.Id)" class="ezra-icon" title="@entry.Definition">
+                    <img src="/images/ezra-note.svg" alt="Strong's entry" />
+                    <span class="ezra-icon-label">@entry.Id&nbsp;<bdi lang="@(StrongsParser.IsHebrew(entry.Id) ? "hbo" : "grc")">@entry.Lemma</bdi></span>
+                </a>
+            </li>
+        }
+        @foreach (var note in Model.Files)
+        {
+            <partial name="_NoteFile" model="note" />
+        }
+    </ul>
+}

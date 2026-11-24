@@ -15,17 +15,123 @@ public class NotesController(EzraDbContext db) : Controller
 {
     private bool SignedIn => User.Identity?.IsAuthenticated == true;
 
+    private const string ViewCookie = "ezra_view";
+
+    // The notes as folders, by book, tag or date (?view=). Picking a view
+    // remembers it in a cookie, so a bare /ezra reopens it; Books otherwise.
     // Public notes for visitors; every note when signed in.
     [HttpGet("")]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? view)
+    {
+        if (view is not null && NoteFolders.Views.Contains(view))
+            Response.Cookies.Append(ViewCookie, view, Remembered);
+        else
+        {
+            view = Request.Cookies[ViewCookie];
+            if (view is null || !NoteFolders.Views.Contains(view)) view = NoteFolders.Books;
+        }
+
+        var all = SignedIn;
+        var notes = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
+            .Where(n => all || n.IsPublic).ToListAsync();
+        return View("Folder", new FolderPage
+        {
+            Title = "Notes",
+            Path = [new("Notes", "/ezra"), ViewStep(view)],
+            Toggles = [.. NoteFolders.Views.Select(ViewStep)],
+            PressedToggle = ViewStep(view).Label,
+            Folders = NoteFolders.Root(notes, view),
+            Empty = "No notes yet.",
+            NewNote = true,
+        });
+    }
+
+    // A year-long preference cookie for the Ezra pages.
+    private CookieOptions Remembered => new()
+    {
+        MaxAge = TimeSpan.FromDays(365), Path = "/ezra", HttpOnly = true,
+        SameSite = SameSiteMode.Lax, Secure = Request.IsHttps, IsEssential = true,
+    };
+
+    // The Icons | List toggle on pages that show notes: remembers the choice
+    // and goes back to the page (local URLs only).
+    [HttpGet("layout/{layout}")]
+    public IActionResult Layout(string layout, string? returnUrl)
+    {
+        if (layout is not ("icons" or "list")) return NotFound();
+        Response.Cookies.Append(NoteFolders.LayoutCookie, layout, Remembered);
+        return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : RedirectToAction(nameof(Index));
+    }
+
+    private static Folder ViewStep(string view) => view switch
+    {
+        NoteFolders.Strongs => new("Strong's", "/ezra?view=strongs"),
+        NoteFolders.Tags => new("Tags", "/ezra?view=tags"),
+        NoteFolders.Dates => new("Dates", "/ezra?view=dates"),
+        _ => new("Books", "/ezra?view=books"),
+    };
+
+    // Notes created on a day (US Central), from the Dates view.
+    [HttpGet("dates/{date}")]
+    public async Task<IActionResult> Date(string date)
+    {
+        if (NoteFolders.ParseSlug(date) is not DateOnly day) return NotFound();
+        var all = SignedIn;
+        var notes = (await db.Notes.Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
+                .Where(n => all || n.IsPublic).OrderByDescending(n => n.UpdatedAt).ToListAsync())
+            .Where(n => NoteFolders.LocalDate(n.CreatedAt) == day).ToList();
+        if (notes.Count == 0) return NotFound();
+        var label = NoteFolders.Label(day);
+        return View("Folder", new FolderPage
+        {
+            Title = label,
+            Path = [new("Notes", "/ezra"), ViewStep(NoteFolders.Dates), new(label, "")],
+            Files = notes,
+        });
+    }
+
+    // The Strong's view's Hebrew and Greek folders: the entries tagged on
+    // notes the visitor can see, by number. (Literal routes, so they win
+    // over strongs/{id}.)
+    [HttpGet("strongs/hebrew")]
+    public Task<IActionResult> StrongsHebrew() => StrongsLanguage(true);
+
+    [HttpGet("strongs/greek")]
+    public Task<IActionResult> StrongsGreek() => StrongsLanguage(false);
+
+    private async Task<IActionResult> StrongsLanguage(bool hebrew)
     {
         var all = SignedIn;
-        var notes = await db.Notes
-            .Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
-            .Where(n => all || n.IsPublic)
-            .OrderByDescending(n => n.UpdatedAt)
+        var prefix = hebrew ? "H" : "G";
+        var entries = await db.Strongs
+            .Where(s => s.Id.StartsWith(prefix) && s.Notes.Any(n => all || n.IsPublic))
+            .Select(s => new StrongsEntry { Id = s.Id, Lemma = s.Lemma, Definition = s.Definition })
             .ToListAsync();
-        return View(notes);
+        if (entries.Count == 0) return NotFound();
+        var label = NoteFolders.Language(hebrew).Label;
+        return View("Folder", new FolderPage
+        {
+            Title = label,
+            Path = [new("Notes", "/ezra"), ViewStep(NoteFolders.Strongs), new(label, "")],
+            Entries = [.. entries.OrderBy(e => int.Parse(e.Id[1..]))],
+        });
+    }
+
+    // Notes with no scripture refs (books) or no user tags (tags).
+    [HttpGet("unfiled/{view}")]
+    public async Task<IActionResult> Unfiled(string view)
+    {
+        if (view is not (NoteFolders.Books or NoteFolders.Tags)) return NotFound();
+        var all = SignedIn;
+        var notes = (await db.Notes.Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
+                .Where(n => all || n.IsPublic).OrderByDescending(n => n.UpdatedAt).ToListAsync())
+            .Where(n => NoteFolders.IsUnfiled(n, view)).ToList();
+        return View("Folder", new FolderPage
+        {
+            Title = "Unfiled",
+            Path = [new("Notes", "/ezra"), ViewStep(view), new("Unfiled", "")],
+            Files = notes,
+        });
     }
 
     // Private notes are 404 when signed out. A missing or old slug redirects
@@ -54,32 +160,69 @@ public class NotesController(EzraDbContext db) : Controller
             .ToListAsync();
         if (notes.Count == 0) return NotFound();
         if (name != tag.Name) return RedirectToAction(nameof(Tag), new { name = tag.Name });
-        ViewData["TagName"] = tag.Name;
-        return View(notes);
+        return View("Folder", new FolderPage
+        {
+            Title = tag.Name,
+            Path = [new("Notes", "/ezra"), ViewStep(NoteFolders.Tags), new(tag.Name, "")],
+            Files = notes,
+            NewNote = true,
+            NewTag = tag.Name,
+        });
     }
 
-    // Notes for a book, chapter or verse. A chapter also finds notes tagged
-    // with the whole book; a verse also finds its whole chapter or book.
+    // A book, chapter or verse folder. A book holds its chapter folders and
+    // the whole-book notes, or with ?all=true every note in the book. A
+    // chapter holds the notes for it or its verses. A verse also finds its
+    // whole chapter or book (NoteRef.Matching, as search does).
     // Other spellings of the book ("Rom", "romans") redirect to the slug.
     [HttpGet("bible/{book}/{chapter:int?}/{verse:int?}")]
-    public async Task<IActionResult> Bible(string book, int? chapter, int? verse)
+    public async Task<IActionResult> Bible(string book, int? chapter, int? verse, bool all = false)
     {
         var found = BibleBooks.Find(book);
         if (found is null || chapter < 1 || chapter > found.Chapters
             || (chapter is int c && (verse < 1 || verse > found.VersesIn(c)))) return NotFound();
-        if (book != found.Slug) return RedirectToAction(nameof(Bible), new { book = found.Slug, chapter, verse });
-
         var target = new ScriptureRef(found.Number, chapter, verse, verse);
+        if (book != found.Slug) return Redirect(target.BrowsePath + (all ? "?all=true" : ""));
         var refs = NoteRef.Matching(db.NoteRefs, target);
 
-        var all = SignedIn;
-        var notes = await db.Notes
-            .Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
-            .Where(n => (all || n.IsPublic) && refs.Any(r => r.NoteId == n.Id))
+        var signedIn = SignedIn;
+        var notes = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
+            .Where(n => (signedIn || n.IsPublic) && refs.Any(r => r.NoteId == n.Id))
             .OrderByDescending(n => n.UpdatedAt)
             .ToListAsync();
-        ViewData["Ref"] = target;
-        return View(notes);
+
+        List<Folder> path = [new("Notes", "/ezra"), ViewStep(NoteFolders.Books), new(found.Name, new ScriptureRef(found.Number).BrowsePath)];
+        if (chapter is int ch) path.Add(new(ch.ToString(CultureInfo.InvariantCulture), new ScriptureRef(found.Number, ch).BrowsePath));
+        if (verse is int v) path.Add(new(v.ToString(CultureInfo.InvariantCulture), target.BrowsePath));
+        path[^1] = path[^1] with { Url = "" };
+
+        // A verse page, and a book's "All notes", list everything found.
+        List<Folder> toggles = [], folders = [];
+        var files = notes;
+        if (chapter is null)
+        {
+            toggles = [new("Chapters", target.BrowsePath), new("All notes", target.BrowsePath + "?all=true")];
+            if (!all)
+            {
+                folders = NoteFolders.Chapters(notes, found.Number);
+                files = notes.Where(n => NoteFolders.InBook(n, found.Number)).ToList();
+            }
+        }
+        else if (verse is null)
+            files = notes.Where(n => NoteFolders.InChapter(n, found.Number, chapter.Value)).ToList();
+
+        return View("Folder", new FolderPage
+        {
+            Title = target.Format(),
+            Path = path,
+            Toggles = toggles,
+            PressedToggle = all ? "All notes" : "Chapters",
+            Folders = folders,
+            Files = files,
+            LsbUrl = target.GatewayUrl,
+            NewNote = true,
+            NewReferences = target.Format(),
+        });
     }
 
     // Search: every text word must match a title, body or tag name, and every
@@ -186,6 +329,12 @@ public class NotesController(EzraDbContext db) : Controller
             .Concat(StrongsParser.Mentions(entry.KjvDef)).Distinct().ToList();
         ViewData["Known"] = (await db.Strongs.Where(s => mentioned.Contains(s.Id)).Select(s => s.Id).ToListAsync()).ToHashSet();
         ViewData["Entry"] = entry;
+        ViewData["Path"] = new List<Folder>
+        {
+            new("Notes", "/ezra"), ViewStep(NoteFolders.Strongs),
+            NoteFolders.Language(StrongsParser.IsHebrew(entry.Id)),
+            new($"{entry.Id} {entry.Lemma}", ""),
+        };
         return View(notes);
     }
 

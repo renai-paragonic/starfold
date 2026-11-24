@@ -325,6 +325,105 @@ body {
     color: var(--ezra-muted);
 }
 
+/* Folder view: an Explorer window. Address line, view toggles, then a white
+   pane of folder and note icons. */
+.ezra-address {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 12px 0 8px;
+    font-size: 12px;
+}
+
+.ezra-address ol {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    min-width: 0;
+    margin: 0;
+    padding: 2px 6px;
+    border: 2px solid;
+    border-color: var(--ezra-shade) var(--ezra-light) var(--ezra-light) var(--ezra-shade);
+    background: #fff;
+    list-style: none;
+}
+
+.ezra-address li + li::before { content: "\\"; margin: 0 6px; color: var(--ezra-muted); }
+
+.ezra-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+/* Button groups (Chapters | All notes, Icons | List) sit apart from each other. */
+.ezra-toolbar-group { display: flex; gap: 6px; }
+.ezra-toolbar-group + .ezra-toolbar-group { margin-left: 12px; }
+
+.ezra-toolbar .ezra-button { font-weight: 400; }
+
+/* Icons | List: picture buttons, the same height as the text ones. */
+.ezra-icon-button { padding: 2px 8px; line-height: 0; }
+.ezra-icon-button img { width: 20px; height: 20px; }
+
+.ezra-toolbar .ezra-button[aria-current] {
+    border-color: var(--ezra-shade) var(--ezra-light) var(--ezra-light) var(--ezra-shade);
+    background: var(--ezra-bg);
+    font-weight: 700;
+}
+
+/* Icons | List sits at the right edge (it's always last in the toolbar). */
+.ezra-toolbar .ezra-layout-toggle { margin-left: auto; }
+
+.ezra-icons {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 12px 8px;
+    margin: 0;
+    padding: 12px;
+    border: 2px solid;
+    border-color: var(--ezra-shade) var(--ezra-light) var(--ezra-light) var(--ezra-shade);
+    background: #fff;
+    list-style: none;
+}
+
+.ezra-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 2px;
+    text-align: center;
+    text-decoration: none;
+}
+
+.ezra-main a.ezra-icon:link,
+.ezra-main a.ezra-icon:visited { color: var(--ezra-fg); }
+
+.ezra-icon img { width: 48px; height: 48px; }
+
+/* List layout under a pane of folders (a book's chapters). */
+.ezra-icons + .ezra-note-list { margin-top: 8px; }
+
+/* Long titles wrap to three lines, then trail off. */
+.ezra-icon-label {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    padding: 0 3px;
+    font-size: 12px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+/* Selected, Win95 style: the label turns blue. */
+.ezra-icon:hover .ezra-icon-label,
+.ezra-icon:focus-visible .ezra-icon-label { background: var(--ezra-accent); color: #fff; }
+.ezra-icon:focus-visible { outline: 1px dotted var(--ezra-fg); }
+
 /* Strong's entry */
 .ezra-lemma { font-weight: 400; }
 .ezra-lexicon dt { margin-top: 12px; color: var(--ezra-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
@@ -410,6 +509,9 @@ body {
     .ezra-brand { font-size: 22px; }
     .ezra-window-buttons { display: none; }
     .ezra-window-body { padding: 12px; }
+    /* Four icons across at 390px. */
+    .ezra-icons { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px 4px; padding: 8px; }
+    .ezra-icon img { width: 40px; height: 40px; }
 }
 
 /* Desktop: editor and preview side by side. */

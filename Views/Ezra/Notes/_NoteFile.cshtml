@@ -1,0 +1,16 @@
+@model Note
+@* A note's file icon in an .ezra-icons pane. Hover text: the note's chips,
+   scripture, Strong's, then tags. *@
+@{
+    var chips = NoteFolders.ChipText(Model);
+}
+<li>
+    <a asp-action="Show" asp-route-id="@Model.Id" asp-route-slug="@Model.Slug" class="ezra-icon" title="@(chips == "" ? null : chips)">
+        <img src="/images/ezra-note.svg" alt="Note" />
+        <span class="ezra-icon-label">@Model.Title</span>
+        @if (!Model.IsPublic)
+        {
+            <span class="ezra-badge">Private</span>
+        }
+    </a>
+</li>
