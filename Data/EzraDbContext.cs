@@ -13,6 +13,7 @@ public class EzraDbContext(DbContextOptions<EzraDbContext> options) : DbContext(
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<NoteRef> NoteRefs => Set<NoteRef>();
     public DbSet<StrongsEntry> Strongs => Set<StrongsEntry>();
+    public DbSet<HitCounter> HitCounters => Set<HitCounter>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -36,6 +37,13 @@ public class EzraDbContext(DbContextOptions<EzraDbContext> options) : DbContext(
         {
             e.ToTable("ezra_strongs");
             e.Property(s => s.Id).ValueGeneratedNever();
+        });
+
+        b.Entity<HitCounter>(e =>
+        {
+            e.ToTable("ezra_hit_counter");
+            e.Property(h => h.Id).ValueGeneratedNever();
+            e.HasData(new HitCounter { Id = 1, Count = 0 });
         });
 
         b.Entity<Note>()

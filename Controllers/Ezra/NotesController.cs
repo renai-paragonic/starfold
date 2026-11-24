@@ -10,7 +10,7 @@ using starfold_mobile.Models.Ezra;
 
 namespace starfold_mobile.Controllers.Ezra;
 
-[Route("ezra")]
+[Route("ezra"), HitCounter]
 public class NotesController(EzraDbContext db) : Controller
 {
     private bool SignedIn => User.Identity?.IsAuthenticated == true;

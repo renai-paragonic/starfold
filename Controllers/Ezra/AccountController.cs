@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace starfold_mobile.Controllers.Ezra;
 
-[Route("ezra")]
+[Route("ezra"), HitCounter]
 public class AccountController(IConfiguration config, ILogger<AccountController> logger) : Controller
 {
     private static readonly PasswordHasher<object> Hasher = new();

@@ -51,6 +51,28 @@ namespace starfold_mobile.Data.Migrations
                     b.ToTable("ezra_note_tags");
                 });
 
+            modelBuilder.Entity("starfold_mobile.Models.Ezra.HitCounter", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
+
+                    b.Property<long>("Count")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("count");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ezra_hit_counter", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Count = 0L
+                        });
+                });
+
             modelBuilder.Entity("starfold_mobile.Models.Ezra.Note", b =>
                 {
                     b.Property<int>("Id")

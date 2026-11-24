@@ -372,6 +372,35 @@ body {
 
 .ezra-danger { color: var(--ezra-error); }
 
+/* Hit counter: classic odometer digits on the starfield, under the window. */
+.ezra-footer {
+    margin: -8px 0 24px;
+    text-align: center;
+    color: var(--ezra-halo);
+    font: 12px var(--ezra-ui);
+}
+
+.ezra-odometer {
+    display: inline-flex;
+    gap: 1px;
+    padding: 2px;
+    border: 2px solid;
+    border-color: var(--ezra-shade) var(--ezra-light) var(--ezra-light) var(--ezra-shade);
+    background: #000;
+    vertical-align: middle;
+}
+
+/* Each digit is a drum: dark at the edges, lit across the middle. */
+.ezra-odometer span {
+    padding: 2px 4px;
+    background: linear-gradient(#111, #555 50%, #111);
+    color: #fff;
+    font: 700 16px/1 var(--ezra-mono);
+}
+
+/* The label sits on its own line, centered under the digits. */
+.ezra-footer-label { margin-top: 4px; }
+
 /* Mobile: Write and Preview take turns, and the window fills the width. */
 @media (max-width: 767px) {
     .ezra-tabs { display: flex; gap: 8px; }

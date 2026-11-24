@@ -42,5 +42,19 @@
             @RenderBody()
         </div>
     </main>
+    @if (ViewData["Hits"] is long hits)
+    {
+        string[] hitLabels = ["sheep have wandered through", "visits from celestial scholars",
+            "theological ponderings reviewed", "heavenly insights gleaned", "destined drop-ins"];
+        <footer class="ezra-footer">
+            <span class="ezra-odometer" role="img" aria-label="@hits">
+                @foreach (var digit in hits.ToString("D6"))
+                {
+                    <span>@digit</span>
+                }
+            </span>
+            <div class="ezra-footer-label">@hitLabels[Random.Shared.Next(hitLabels.Length)]</div>
+        </footer>
+    }
 </body>
 </html>
