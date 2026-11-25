@@ -6,17 +6,17 @@ using starfold_mobile.Bible;
 
 namespace starfold_mobile.Data;
 
-// Turns a Logos note body (ContentRichText) into Ezra Markdown, and collects
-// the scripture it links to. The markup seen in Renai's notes: Paragraph, Run
+// Turns a Logos note body (ContentRichText) into Ezra Markdown, with its
+// scripture links pointed at Bible Gateway. They stay links only: a note's
+// refs come from its anchor (Renai, 2026-11-24). The markup seen in Renai's notes: Paragraph, Run
 // (Text, FontBold, FontItalic, HasUnderline), List/ListItem, Reference,
 // UriLink and UriMedia. Font size, family, colour and language are dropped.
 public static partial class LogosRichText
 {
-    public sealed record Result(string Markdown, List<ScriptureRef> Refs, List<string> Problems);
+    public sealed record Result(string Markdown, List<string> Problems);
 
     public static Result Convert(string richText)
     {
-        var refs = new List<ScriptureRef>();
         var problems = new List<string>();
         XElement root;
         try
@@ -25,16 +25,16 @@ public static partial class LogosRichText
         }
         catch (XmlException e)
         {
-            return new("", refs, [$"couldn't read the note's markup: {e.Message}"]);
+            return new("", [$"couldn't read the note's markup: {e.Message}"]);
         }
 
         var blocks = new List<string>();
         foreach (var el in root.Elements())
         {
-            var block = el.Name.LocalName == "List" ? List(el, 0, refs, problems) : Paragraph(el, refs, problems);
+            var block = el.Name.LocalName == "List" ? List(el, 0, problems) : Paragraph(el, problems);
             if (block != "") blocks.Add(block);
         }
-        return new(string.Join("\n\n", blocks), [.. refs.Distinct()], problems);
+        return new(string.Join("\n\n", blocks), problems);
     }
 
     // "bible+nasb95.66.5.20-66.6.3" → "Romans 5:20-6:3", the form Ezra's
@@ -65,7 +65,7 @@ public static partial class LogosRichText
         };
     }
 
-    private static string List(XElement list, int depth, List<ScriptureRef> refs, List<string> problems)
+    private static string List(XElement list, int depth, List<string> problems)
     {
         var lines = new List<string>();
         var indent = new string(' ', depth * 2);
@@ -75,8 +75,8 @@ public static partial class LogosRichText
             // An item's paragraphs share one line (joined by line breaks), and
             // its nested lists follow, indented.
             var text = string.Join("\\\n" + indent + "  ", item.Elements().Where(e => e.Name.LocalName != "List")
-                .Select(e => Paragraph(e, refs, problems)).Where(t => t != ""));
-            var nested = item.Elements().Where(e => e.Name.LocalName == "List").Select(e => List(e, depth + 1, refs, problems)).Where(t => t != "").ToList();
+                .Select(e => Paragraph(e, problems)).Where(t => t != ""));
+            var nested = item.Elements().Where(e => e.Name.LocalName == "List").Select(e => List(e, depth + 1, problems)).Where(t => t != "").ToList();
             if (text == "" && nested.Count == 0) continue;
             lines.Add($"{indent}- {text}".TrimEnd());
             lines.AddRange(nested);
@@ -88,11 +88,11 @@ public static partial class LogosRichText
     // would make a code block), and a leading # is escaped so it isn't a
     // heading. A leading "- " or "1. " is left alone: Renai typed those as
     // bullets, and Markdown shows them as one.
-    private static string Paragraph(XElement p, List<ScriptureRef> refs, List<string> problems)
+    private static string Paragraph(XElement p, List<string> problems)
     {
         if (p.Name.LocalName != "Paragraph") problems.Add($"read a {p.Name.LocalName} as a paragraph.");
         var spans = new List<Span>();
-        foreach (var node in p.Elements()) Inline(node, spans, refs, problems);
+        foreach (var node in p.Elements()) Inline(node, spans, problems);
 
         // Formatting on only punctuation or spaces is invisible, and Logos
         // often makes a comma bold-italic next to a bold word, which would
@@ -108,7 +108,7 @@ public static partial class LogosRichText
     // A piece of inline Markdown (already escaped) and its formatting.
     private sealed record Span(string Md, Fmt Fmt);
 
-    private static void Inline(XElement el, List<Span> spans, List<ScriptureRef> refs, List<string> problems)
+    private static void Inline(XElement el, List<Span> spans, List<string> problems)
     {
         switch (el.Name.LocalName)
         {
@@ -128,7 +128,6 @@ public static partial class LogosRichText
                     spans.Add(new(shown, Format(first)));
                     break;
                 }
-                refs.AddRange(parsed.Refs);
                 var url = $"https://www.biblegateway.com/passage/?search={Uri.EscapeDataString(text)}&version=LSB";
                 spans.Add(new($"[{(shown == "" ? Escape(text) : shown)}]({url})", Format(first)));
                 break;

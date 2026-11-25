@@ -32,12 +32,18 @@ if (args is ["import-strongs", ..] && importStrongs is null)
     return 1;
 }
 
-// `dotnet run -- import-logos <notestool.db> <export.html>` brings in notes
-// from Logos (see Data/LogosImport.cs), with the same handling of its args.
-var importLogos = args is ["import-logos", var logosDb, var logosExport] ? (Db: logosDb, Export: logosExport) : ((string Db, string Export)?)null;
+// `dotnet run -- import-logos <notestool.db> <export.html> [--write]` brings
+// in notes from Logos (see Data/LogosImport.cs), with the same handling of
+// its args. Without --write it's a dry run.
+var importLogos = args switch
+{
+    ["import-logos", var logosDb, var logosExport] => (Db: logosDb, Export: logosExport, Write: false),
+    ["import-logos", var logosDb, var logosExport, "--write"] => (Db: logosDb, Export: logosExport, Write: true),
+    _ => ((string Db, string Export, bool Write)?)null,
+};
 if (args is ["import-logos", ..] && importLogos is null)
 {
-    Console.Error.WriteLine("Usage: dotnet run -- import-logos <notestool.db> <export.html>");
+    Console.Error.WriteLine("Usage: dotnet run -- import-logos <notestool.db> <export.html> [--write]");
     return 1;
 }
 var importing = importStrongs is not null || importLogos is not null;
@@ -105,8 +111,8 @@ using (var scope = app.Services.CreateScope())
     db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
     if (importStrongs is not null) return await StrongsImport.RunAsync(db, importStrongs);
     // The ASV that places Logos text anchors lives next to the database.
-    if (importLogos is var (logosDbPath, exportPath))
-        return await LogosImport.RunAsync(db, logosDbPath, exportPath, Path.Combine(dataDir, "asv", "asv.json"));
+    if (importLogos is var (logosDbPath, exportPath, write))
+        return await LogosImport.RunAsync(db, logosDbPath, exportPath, Path.Combine(dataDir, "asv", "asv.json"), write);
 }
 
 app.UseForwardedHeaders();

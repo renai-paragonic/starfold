@@ -487,7 +487,8 @@ public class NotesController(EzraDbContext db) : Controller
     }
 
     // "Romans 8: Life in the Spirit" -> "romans-8-life-in-the-spirit".
-    private static string Slugify(string title)
+    // Public for the Logos import (Data/LogosImport.cs).
+    public static string Slugify(string title)
     {
         var sb = new StringBuilder();
         foreach (var c in title.Normalize(NormalizationForm.FormD))

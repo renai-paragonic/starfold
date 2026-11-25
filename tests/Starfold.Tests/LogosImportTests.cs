@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using starfold_mobile.Bible;
 using starfold_mobile.Data;
 using static starfold_mobile.Data.LogosNotes;
@@ -25,15 +26,18 @@ public class LogosImportTests
         LogosImport.Plan(notes, export ?? [], Asv, Words);
 
     [Fact]
-    public void A_reference_anchor_is_exact_and_not_repeated_in_the_body_refs()
+    public void A_reference_anchor_is_the_only_ref_and_body_links_stay_links()
     {
         var p = Plan([N("john", "Son of Man", 64, Ref("bible+nasb95.64.5.27"))]).Single();
         Assert.Equal("John 5:27", p.AnchorLabel);
         Assert.Null(p.Confidence);
-        Assert.Equal([new ScriptureRef(43, 5, 27, 27)], p.AnchorRefs);
-        Assert.Equal([new ScriptureRef(1, 1, 1, 1)], p.BodyRefs);
-        Assert.Equal(2, p.Refs.Count);
+        Assert.Equal([new ScriptureRef(43, 5, 27, 27)], p.Refs);
+        Assert.Contains("[Gen 1:1](https://www.biblegateway.com/passage/?search=Genesis%201%3A1&version=LSB)", p.Markdown);
     }
+
+    [Fact]
+    public void A_note_with_only_body_links_has_no_refs() =>
+        Assert.Empty(Plan([N("john", "Son of Man", null)]).Single().Refs);
 
     [Fact]
     public void A_word_anchor_becomes_a_strongs_tag_and_reports_a_tie()
@@ -59,7 +63,7 @@ public class LogosImportTests
         };
         var plan = Plan(notes, export);
         Assert.Equal(["Hebrews 1:1", "Hebrews 1:2"], plan.Select(p => p.AnchorLabel));
-        Assert.Equal([new ScriptureRef(58, 1, 2, 2)], plan[1].AnchorRefs);
+        Assert.Equal([new ScriptureRef(58, 1, 2, 2)], plan[1].Refs);
         Assert.All(plan, p => Assert.Empty(p.Problems));
     }
 
@@ -78,4 +82,82 @@ public class LogosImportTests
     [Fact]
     public void A_bad_reference_anchor_is_reported() =>
         Assert.Equal(["\"Romans 17:1\": Romans has 16 chapters."], Plan([N("bad", "x", 66, Ref("bible+nasb95.66.17.1"))]).Single().Problems);
+
+    [Theory]
+    [InlineData("Hebrews 1:1", "The letter opens with an absolutely packed theological statement. God has spoken",
+        "Hebrews 1:1 — The letter opens with an absolutely packed theological…")]
+    [InlineData("Ecclesiastes 2:3", "Limit testing", "Ecclesiastes 2:3 — Limit testing")]
+    [InlineData(null, "Grace is not the only thing that is true", "Grace is not the only thing that is true")]
+    [InlineData("John 3", "", "John 3")]
+    [InlineData(null, "", "Logos note")]
+    public void Titles_are_the_anchor_and_first_words(string? anchor, string body, string title) =>
+        Assert.Equal(title, LogosImport.Title(anchor, $"<Paragraph><Run Text=\"{body}\"/></Paragraph>"));
+
+    [Fact]
+    public void Titles_keep_paragraphs_apart() =>
+        Assert.Equal("That’s us! He’s talking about us!", LogosImport.Title(null,
+            "<Paragraph><Run Text=\"That’s us!\"/></Paragraph><Paragraph/><Paragraph><Run Text=\"He’s talking about us!\"/></Paragraph>"));
+
+    [Theory]
+    [InlineData("Gideon & Baal", "Gideon and Baal")]
+    [InlineData("What's In A Name", "Whats In A Name")]
+    [InlineData("The Feeding of the 5000", "The Feeding of the 5000")]
+    [InlineData("!!!", null)]
+    [InlineData(null, null)]
+    public void Notebooks_become_valid_tag_names(string? notebook, string? tag) => Assert.Equal(tag, LogosImport.TagFor(notebook));
+}
+
+// LogosImport.WriteAsync against the real schema, in an in-memory database.
+public sealed class LogosImportWriteTests : IAsyncLifetime
+{
+    private readonly Microsoft.Data.Sqlite.SqliteConnection _connection = new("Data Source=:memory:");
+    private EzraDbContext _db = null!;
+
+    public async Task InitializeAsync()
+    {
+        await _connection.OpenAsync();
+        _db = new EzraDbContext(new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<EzraDbContext>()
+            .UseSqlite(_connection, s => s.MigrationsHistoryTable("ezra_ef_migrations")).Options);
+        await _db.Database.MigrateAsync();
+        _db.Strongs.Add(new() { Id = "H6965", Lemma = "קוּם" });
+        _db.Tags.Add(new() { Name = "tulip" });
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task DisposeAsync()
+    {
+        await _db.DisposeAsync();
+        await _connection.DisposeAsync();
+    }
+
+    private static LogosImport.Planned P(string id, string? notebook, string? tag, params string[] strongs) => new(
+        new LogosNotes.Note(id, new DateTime(2026, 1, 24, 13, 35, 49, DateTimeKind.Utc), id == "a" ? new DateTime(2026, 1, 25, 1, 0, 0, DateTimeKind.Utc) : null,
+            notebook, "<Paragraph/>", 79, []),
+        $"Hebrews 1:1 — note {id}", "The **letter** opens", "Hebrews 1:1", LogosAlignment.Confidence.High,
+        [new ScriptureRef(58, 1, 1, 1)], [.. strongs], tag, []);
+
+    [Fact]
+    public async Task Writes_public_notes_with_their_logos_dates_refs_tags_and_strongs()
+    {
+        var (notes, newTags) = await LogosImport.WriteAsync(_db, [P("a", "TULIP", "TULIP", "H6965"), P("b", "Gideon & Baal", "Gideon and Baal"), P("c", null, null)]);
+        Assert.Equal((3, 1), (notes, newTags));
+
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Notes.Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs).OrderBy(n => n.LogosId).ToListAsync();
+        var a = saved[0];
+        Assert.Equal(("a", "Hebrews 1:1 — note a", "hebrews-1-1-note-a", "The **letter** opens", true), (a.LogosId, a.Title, a.Slug, a.BodyMd, a.IsPublic));
+        Assert.Equal(new DateTime(2026, 1, 24, 13, 35, 49), a.CreatedAt);
+        Assert.Equal(new DateTime(2026, 1, 25, 1, 0, 0), a.UpdatedAt);
+        Assert.Equal(a.CreatedAt, saved[1].UpdatedAt);
+        Assert.Equal(["tulip"], a.Tags.Select(t => t.Name));
+        Assert.Equal(["H6965"], a.Strongs.Select(s => s.Id));
+        Assert.Equal([(58, 1)], a.Refs.Select(r => (r.Book, r.Chapter!.Value)));
+        Assert.Equal(["Gideon and Baal"], saved[1].Tags.Select(t => t.Name));
+        Assert.Empty(saved[2].Tags);
+        Assert.Equal(2, await _db.Tags.CountAsync());
+    }
+
+    [Fact]
+    public async Task A_logos_note_can_only_be_imported_once() =>
+        await Assert.ThrowsAsync<Microsoft.EntityFrameworkCore.DbUpdateException>(() => LogosImport.WriteAsync(_db, [P("a", null, null), P("a", null, null)]));
 }

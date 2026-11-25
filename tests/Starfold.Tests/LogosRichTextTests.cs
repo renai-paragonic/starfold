@@ -1,4 +1,3 @@
-using starfold_mobile.Bible;
 using starfold_mobile.Data;
 using starfold_mobile.Models.Ezra;
 
@@ -75,32 +74,23 @@ public class LogosRichTextTests
     }
 
     [Fact]
-    public void References_link_to_bible_gateway_and_become_refs()
+    public void References_link_to_bible_gateway()
     {
         var r = LogosRichText.Convert(P(Run("see "), Ref("bible+nasb95.1.12.1-1.12.3", "Genesis 12:1-3")));
         Assert.Equal("see [Genesis 12:1-3](https://www.biblegateway.com/passage/?search=Genesis%2012%3A1-3&version=LSB)", r.Markdown);
-        Assert.Equal([new ScriptureRef(1, 12, 1, 3)], r.Refs);
         Assert.Empty(r.Problems);
     }
 
     [Fact]
-    public void A_range_across_chapters_splits()
-    {
-        var r = LogosRichText.Convert(P(Ref("bible+esv.66.5.20-66.6.3", "Romans 5:20-6:3")));
-        Assert.Equal([new ScriptureRef(45, 5, 20, 21), new ScriptureRef(45, 6, 1, 3)], r.Refs);
-        Assert.Contains("search=Romans%205%3A20-6%3A3", r.Markdown);
-    }
-
-    [Fact]
-    public void The_same_passage_twice_is_one_ref() =>
-        Assert.Single(LogosRichText.Convert(P(Ref("bible.66.9", "Romans 9"), Run(" and "), Ref("bible+nasb95.66.9", "Rom 9"))).Refs);
+    public void A_range_across_chapters_links_as_one_passage() =>
+        Assert.Equal("[Romans 5:20-6:3](https://www.biblegateway.com/passage/?search=Romans%205%3A20-6%3A3&version=LSB)",
+            LogosRichText.Convert(P(Ref("bible+esv.66.5.20-66.6.3", "Romans 5:20-6:3"))).Markdown);
 
     [Fact]
     public void A_bad_reference_stays_as_text_and_is_reported()
     {
         var r = LogosRichText.Convert(P(Ref("bible+nasb95.66.17.1", "Romans 17:1"), Ref("bible+nrsv.41.1.1", "Tobit 1:1")));
         Assert.Equal("Romans 17:1Tobit 1:1", r.Markdown);
-        Assert.Empty(r.Refs);
         Assert.Equal(["\"Romans 17:1\": Romans has 16 chapters.", "couldn't read the reference bible+nrsv.41.1.1."], r.Problems);
     }
 

@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using starfold_mobile.Bible;
@@ -5,25 +6,24 @@ using starfold_mobile.Models.Ezra;
 
 namespace starfold_mobile.Data;
 
-// `dotnet run -- import-logos <notestool.db> <export.html>`: brings Renai's
-// Logos notes into Ezra. For now it's a dry run that lists what would be
-// imported; the rest is built in steps (see the Logos note importer in
+// `dotnet run -- import-logos <notestool.db> <export.html> [--write]`: brings
+// Renai's Logos notes into Ezra as public notes. Without --write it's a dry
+// run that lists what it would do (see the Logos note importer in
 // ProjectPlans/ezra.md). Notes with no body are skipped, and so are notes
 // already imported (by Logos id). The export supplies the anchored quotes,
-// and the ASV (App_Data/asv/asv.json) places text-selection anchors.
-public static class LogosImport
+// and the ASV (asv/asv.json next to the database) places text-selection anchors.
+public static partial class LogosImport
 {
     // Everything worked out for one note. AnchorLabel is where the note is
     // anchored ("Hebrews 1:1"), and Confidence says how sure the placement
-    // is (null when the anchor is exact or there's none).
+    // is (null when the anchor is exact or there's none). Refs come from the
+    // anchor only: scripture linked in the body stays a link (Renai,
+    // 2026-11-24). Tag is its notebook's tag name.
     public sealed record Planned(
-        LogosNotes.Note Note, string Markdown, string? AnchorLabel, LogosAlignment.Confidence? Confidence,
-        List<ScriptureRef> AnchorRefs, List<ScriptureRef> BodyRefs, List<string> Strongs, List<string> Problems)
-    {
-        public List<ScriptureRef> Refs => [.. AnchorRefs.Concat(BodyRefs).Distinct()];
-    }
+        LogosNotes.Note Note, string Title, string Markdown, string? AnchorLabel, LogosAlignment.Confidence? Confidence,
+        List<ScriptureRef> Refs, List<string> Strongs, string? Tag, List<string> Problems);
 
-    public static async Task<int> RunAsync(EzraDbContext db, string path, string exportPath, string asvPath)
+    public static async Task<int> RunAsync(EzraDbContext db, string path, string exportPath, string asvPath, bool write)
     {
         // Hebrew and Greek in the output; Windows consoles default to a code page.
         Console.OutputEncoding = new System.Text.UTF8Encoding(false);
@@ -66,7 +66,9 @@ public static class LogosImport
             .GroupBy(p => p.Confidence!.Value).OrderBy(g => g.Key).Select(g => $"{g.Key.ToString().ToLowerInvariant()} {g.Count()}")) +
             $", not placed {plan.Count(p => p.Note.Kind == LogosNotes.AnchorKind.BibleText && p.AnchorLabel is null)}.");
         Console.WriteLine("Notebooks: " + string.Join(", ", toImport.GroupBy(n => n.Notebook ?? "(none)").OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase).Select(g => $"{g.Key} {g.Count()}")));
-        Console.WriteLine($"Refs: {plan.Sum(p => p.AnchorRefs.Count)} from anchors, {plan.Sum(p => p.BodyRefs.Count)} from bodies. " +
+        var renamed = plan.Where(p => p.Note.Notebook is not null && p.Tag != p.Note.Notebook).Select(p => $"\"{p.Note.Notebook}\" → {(p.Tag is null ? "no tag" : $"\"{p.Tag}\"")}").Distinct().ToList();
+        if (renamed.Count > 0) Console.WriteLine("Notebook tags renamed to fit the tag rule: " + string.Join(", ", renamed));
+        Console.WriteLine($"Refs (from anchors): {plan.Sum(p => p.Refs.Count)}, and {plan.Count(p => p.Refs.Count == 0)} notes have none. " +
             $"Strong's: {plan.Sum(p => p.Strongs.Count)}. Problems: {plan.Sum(p => p.Problems.Count)}.");
         Console.WriteLine();
         foreach (var p in plan)
@@ -74,11 +76,10 @@ public static class LogosImport
             var conf = p.Confidence?.ToString().ToLowerInvariant() ?? (p.AnchorLabel is null ? "" : "exact");
             var extra = string.Join("  ", new[]
             {
-                p.BodyRefs.Count > 0 ? "body: " + string.Join("; ", p.BodyRefs.Select(r => r.Format())) : "",
                 p.Strongs.Count > 0 ? "Strong's: " + string.Join(", ", p.Strongs) : "",
-                p.Note.Notebook is string nb ? $"notebook: {nb}" : "",
+                p.Tag is string tag ? $"tag: {tag}" : "",
             }.Where(s => s != ""));
-            Console.WriteLine($"{Date(p.Note)}  {conf,-7}  {p.AnchorLabel ?? "",-28}  {extra}".TrimEnd());
+            Console.WriteLine($"{Date(p.Note)}  {conf,-7}  {p.Title}{(extra == "" ? "" : "  |  " + extra)}");
         }
 
         var problems = plan.SelectMany(p => p.Problems.Select(x => $"{Date(p.Note)}  {p.AnchorLabel ?? Book(p.Note),-28}  {x}")).ToList();
@@ -89,7 +90,13 @@ public static class LogosImport
             foreach (var x in problems) Console.WriteLine(x);
         }
         Console.WriteLine();
-        Console.WriteLine("Dry run: nothing was written.");
+        if (!write)
+        {
+            Console.WriteLine("Dry run: nothing was written. Add --write to import these notes.");
+            return 0;
+        }
+        var (written, newTags) = await WriteAsync(db, plan);
+        Console.WriteLine($"Imported {written} notes as public notes, with {newTags} new tags.");
         return 0;
     }
 
@@ -165,9 +172,74 @@ public static class LogosImport
                 }
             }
 
-        return [.. notes.Select((n, i) => new Planned(n, bodies[i].Markdown, labels[i], confidence[i],
-            [.. anchorRefs[i].Distinct()], [.. bodies[i].Refs.Except(anchorRefs[i])], strongs[i], problems[i]))];
+        return [.. notes.Select((n, i) => new Planned(n, Title(labels[i], n.RichText!), bodies[i].Markdown, labels[i], confidence[i],
+            [.. anchorRefs[i].Distinct()], strongs[i], TagFor(n.Notebook), problems[i]))];
     }
+
+    // Saves the plan as public notes, with their Logos dates, and returns how
+    // many notes and new tags it made. A notebook's tag is reused in any
+    // casing, as the editor does. One SaveChanges, so it's all or nothing.
+    public static async Task<(int Notes, int NewTags)> WriteAsync(EzraDbContext db, IReadOnlyList<Planned> plan)
+    {
+        var tags = await db.Tags.ToListAsync();
+        var ids = plan.SelectMany(p => p.Strongs).Distinct().ToList();
+        var strongs = await db.Strongs.Where(s => ids.Contains(s.Id)).ToDictionaryAsync(s => s.Id);
+        var newTags = 0;
+        foreach (var p in plan)
+        {
+            var note = new Note
+            {
+                Title = p.Title,
+                Slug = Controllers.Ezra.NotesController.Slugify(p.Title),
+                BodyMd = p.Markdown,
+                IsPublic = true,
+                CreatedAt = p.Note.CreatedUtc,
+                UpdatedAt = p.Note.ModifiedUtc ?? p.Note.CreatedUtc,
+                LogosId = p.Note.Id,
+            };
+            if (p.Tag is string name)
+            {
+                var tag = tags.FirstOrDefault(t => string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
+                if (tag is null)
+                {
+                    tags.Add(tag = new Tag { Name = name });
+                    newTags++;
+                }
+                note.Tags.Add(tag);
+            }
+            foreach (var r in p.Refs)
+                note.Refs.Add(new NoteRef { Book = r.Book, Chapter = r.Chapter, VerseStart = r.VerseStart, VerseEnd = r.VerseEnd });
+            note.Strongs.AddRange(p.Strongs.Where(strongs.ContainsKey).Select(id => strongs[id]));
+            db.Notes.Add(note);
+        }
+        await db.SaveChangesAsync();
+        return (plan.Count, newTags);
+    }
+
+    // "Hebrews 1:1 — The letter opens with an absolutely packed…", or just
+    // the first words when the note has no anchor ref.
+    public static string Title(string? anchor, string richText)
+    {
+        var text = Spaces().Replace(LogosExport.BodyText(ParagraphEnd().Replace(richText, "<Run Text=\" \"/>")), " ").Trim();
+        var words = text.Length <= 60 ? text : text[..(text[..60].LastIndexOf(' ') is > 20 and var cut ? cut : 60)].TrimEnd(',', ';', ':', ' ', '-', '—') + "…";
+        return anchor is null ? (words == "" ? "Logos note" : words) : words == "" ? anchor : $"{anchor} — {words}";
+    }
+
+    // A notebook title as a tag name: & becomes "and", and anything else
+    // tags can't hold goes (see TagName). Null when nothing is left.
+    public static string? TagFor(string? notebook)
+    {
+        if (notebook is null) return null;
+        var name = TagName.Normalize(new string([.. notebook.Replace("&", " and ").Where(c => char.IsLetterOrDigit(c) || c is ' ' or '-')]));
+        if (name.Length > TagName.MaxLength) name = name[..TagName.MaxLength].TrimEnd(' ', '-');
+        return TagName.IsValid(name) ? name : null;
+    }
+
+    [GeneratedRegex(@"\s+")]
+    private static partial Regex Spaces();
+
+    [GeneratedRegex("</Paragraph>|<Paragraph[^>]*/>")]
+    private static partial Regex ParagraphEnd();
 
     private static string Snippet(string? quote) =>
         quote is null ? "(no quote)" : quote.Length > 60 ? quote[..60] + "…" : quote;
