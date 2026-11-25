@@ -38,9 +38,23 @@ public static class LogosImport
             $"{withBody.Count - toImport.Count} already imported, {toImport.Count} to import.");
         Console.WriteLine("Anchors: " + string.Join(", ", toImport.GroupBy(n => n.Kind).OrderBy(g => g.Key).Select(g => $"{Label(g.Key)} {g.Count()}")));
         Console.WriteLine("Notebooks: " + string.Join(", ", toImport.GroupBy(n => n.Notebook ?? "(none)").OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase).Select(g => $"{g.Key} {g.Count()}")));
+        var bodies = toImport.ToDictionary(n => n.Id, n => LogosRichText.Convert(n.RichText!));
+        var refCount = bodies.Values.Sum(b => b.Refs.Count);
+        Console.WriteLine($"Body refs: {refCount} in {bodies.Values.Count(b => b.Refs.Count > 0)} notes. Problems: {bodies.Values.Sum(b => b.Problems.Count)}.");
         Console.WriteLine();
         foreach (var n in toImport)
-            Console.WriteLine($"{NoteFolders.Slug(NoteFolders.LocalDate(n.CreatedUtc))}  {Label(n.Kind),-10}  {Book(n),-16}  {n.Notebook}".TrimEnd());
+        {
+            var refs = string.Join("; ", bodies[n.Id].Refs.Select(r => r.Format()));
+            Console.WriteLine($"{Date(n)}  {Label(n.Kind),-10}  {Book(n),-16}  {n.Notebook,-24}  {refs}".TrimEnd());
+        }
+
+        var problems = toImport.SelectMany(n => bodies[n.Id].Problems.Select(p => $"{Date(n)}  {Book(n),-16}  {p}")).ToList();
+        if (problems.Count > 0)
+        {
+            Console.WriteLine();
+            Console.WriteLine("To look at:");
+            foreach (var p in problems) Console.WriteLine(p);
+        }
         Console.WriteLine();
         Console.WriteLine("Dry run: nothing was written.");
         return 0;
@@ -54,6 +68,8 @@ public static class LogosImport
         LogosNotes.AnchorKind.Other => "other",
         _ => "none",
     };
+
+    private static string Date(LogosNotes.Note n) => NoteFolders.Slug(NoteFolders.LocalDate(n.CreatedUtc));
 
     private static string Book(LogosNotes.Note n) =>
         n.LogosBook is int b && LogosNotes.EzraBook(b) is int ezra ? BibleBooks.Get(ezra).Name : "";
