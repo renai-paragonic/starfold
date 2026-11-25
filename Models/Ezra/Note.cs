@@ -9,6 +9,8 @@ public class Note
     public bool IsPublic { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    // The Logos note this was imported from (its ExternalId), so a re-import skips it.
+    public string? LogosId { get; set; }
 
     public List<Tag> Tags { get; set; } = [];
     public List<NoteRef> Refs { get; set; } = [];

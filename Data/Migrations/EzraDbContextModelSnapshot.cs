@@ -93,6 +93,10 @@ namespace starfold_mobile.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("is_public");
 
+                    b.Property<string>("LogosId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("logos_id");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasColumnType("TEXT")
@@ -108,6 +112,9 @@ namespace starfold_mobile.Data.Migrations
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LogosId")
+                        .IsUnique();
 
                     b.ToTable("ezra_notes", (string)null);
                 });

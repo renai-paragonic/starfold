@@ -17,7 +17,11 @@ public class EzraDbContext(DbContextOptions<EzraDbContext> options) : DbContext(
 
     protected override void OnModelCreating(ModelBuilder b)
     {
-        b.Entity<Note>().ToTable("ezra_notes");
+        b.Entity<Note>(e =>
+        {
+            e.ToTable("ezra_notes");
+            e.HasIndex(n => n.LogosId).IsUnique();
+        });
 
         b.Entity<Tag>(e =>
         {

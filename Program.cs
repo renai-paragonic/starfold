@@ -32,9 +32,19 @@ if (args is ["import-strongs", ..] && importStrongs is null)
     return 1;
 }
 
-var builder = WebApplication.CreateBuilder(importStrongs is null ? args : []);
-// The import's ~14k inserts would otherwise each be logged in development.
-if (importStrongs is not null) builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+// `dotnet run -- import-logos <notestool.db>` brings in notes from Logos
+// (see Data/LogosImport.cs), with the same handling of its args.
+var importLogos = args is ["import-logos", var logosDb] ? logosDb : null;
+if (args is ["import-logos", ..] && importLogos is null)
+{
+    Console.Error.WriteLine("Usage: dotnet run -- import-logos <notestool.db>");
+    return 1;
+}
+var importing = importStrongs is not null || importLogos is not null;
+
+var builder = WebApplication.CreateBuilder(importing ? [] : args);
+// An import's inserts would otherwise each be logged in development.
+if (importing) builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews(o => o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()))
@@ -94,6 +104,7 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
     db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
     if (importStrongs is not null) return await StrongsImport.RunAsync(db, importStrongs);
+    if (importLogos is not null) return await LogosImport.RunAsync(db, importLogos);
 }
 
 app.UseForwardedHeaders();
