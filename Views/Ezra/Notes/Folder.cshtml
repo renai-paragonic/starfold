@@ -6,6 +6,8 @@
     var returnHere = Model.NewReferences is not null || Model.NewTag is not null;
     // The Icons | List toggle only matters when the folder holds notes.
     var list = Model.Files.Count > 0 && Context.Request.Cookies[NoteFolders.LayoutCookie] == "list";
+    // In the order picked with the sort buttons (oldest first by default).
+    var files = NoteFolders.Sorted(Model.Files, Context.Request.Cookies[NoteFolders.SortCookie]);
 }
 <div class="ezra-title-row">
     <h1>@Model.Title</h1>
@@ -58,7 +60,7 @@ else if (list)
             }
         </ul>
     }
-    <partial name="_NoteList" model="Model.Files" />
+    <partial name="_NoteList" model="files" />
 }
 else
 {
@@ -77,7 +79,7 @@ else
                 </a>
             </li>
         }
-        @foreach (var note in Model.Files)
+        @foreach (var note in files)
         {
             <partial name="_NoteFile" model="note" />
         }

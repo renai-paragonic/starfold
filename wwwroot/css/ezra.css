@@ -368,6 +368,9 @@ body {
 .ezra-icon-button { padding: 2px 8px; line-height: 0; }
 .ezra-icon-button img { width: 20px; height: 20px; }
 
+/* The I-beam cursor between the sort buttons and Icons | List. */
+.ezra-toolbar-cursor { width: 10px; height: 28px; margin: 0 4px; }
+
 .ezra-toolbar .ezra-button[aria-current] {
     border-color: var(--ezra-shade) var(--ezra-light) var(--ezra-light) var(--ezra-shade);
     background: var(--ezra-bg);
@@ -507,6 +510,13 @@ body {
     background: #fff;
 }
 
+/* "Pop out preview" sits at the right, above the panes (desktop only). */
+.ezra-popout-tools { display: flex; justify-content: flex-end; }
+
+/* The pop-out window's page: one Ezra window, filling the browser window. */
+.ezra-popout { margin: 8px; }
+.ezra-popout .ezra-preview { min-height: 0; }
+
 .ezra-tabs button { font-weight: 400; }
 .ezra-tabs button[aria-pressed="true"] { background: var(--ezra-bg); font-weight: 700; }
 
@@ -548,6 +558,8 @@ body {
 /* Mobile: Write and Preview take turns, and the window fills the width. */
 @media (max-width: 767px) {
     .ezra-tabs { display: flex; gap: 8px; }
+    /* A phone opens a "window" as another tab; Write | Preview does that job. */
+    .ezra-popout-tools { display: none; }
     .ezra-panes[data-mode="write"] .ezra-preview,
     .ezra-panes[data-mode="preview"] textarea { display: none; }
     .ezra-main, .ezra-main-wide { max-width: calc(100% - 16px); }

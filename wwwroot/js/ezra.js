@@ -1,4 +1,4 @@
-// Ezra: confirm before delete, the tag merge's new-name box, the header search box, and the editor's live preview, mobile Write/Preview toggle, and tag and references chip boxes.
+// Ezra: confirm before delete, the tag merge's new-name box, the header search box, the editor's live preview, mobile Write/Preview toggle and pop-out preview window, and tag and references chip boxes.
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('form[data-confirm]').forEach(form => {
         form.addEventListener('submit', e => {
@@ -15,14 +15,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // Search chips post as ?tag=, ?ref=, ?strongs=; Enter searches.
     if (search) setUpSuggestBox(search, { inputName: kind => kind, enterSubmits: true });
 
+    const popout = document.querySelector('.ezra-popout');
+    if (popout) { setUpPopout(popout); return; }
+
     const editor = document.querySelector('.ezra-editor');
     if (!editor) return;
     const body = editor.querySelector('textarea');
     const panes = editor.querySelector('.ezra-panes');
     const preview = editor.querySelector('.ezra-preview');
     const tabs = editor.querySelectorAll('.ezra-tabs button');
+    const title = editor.querySelector('input[name="Title"]');
     let timer;
     let latest = 0;
+
+    // The pop-out preview window hears every new preview and title over a
+    // BroadcastChannel, and asks for the current one when it opens.
+    const channel = 'BroadcastChannel' in window ? new BroadcastChannel(PopoutChannel) : null;
+    const share = () => channel?.postMessage({ title: title.value, html: preview.innerHTML });
+    if (channel) {
+        channel.onmessage = e => { if (e.data?.hello) share(); };
+        title.addEventListener('input', share);
+        // Leaving the editor (saving, cancelling) tells the window to stop waiting.
+        window.addEventListener('pagehide', () => channel.postMessage({ closed: true }));
+        const popButton = editor.querySelector('[data-popout-url]');
+        popButton.hidden = false;
+        // The same window name each time, so pressing it again brings that window forward.
+        popButton.addEventListener('click', () => {
+            window.open(popButton.dataset.popoutUrl, 'ezra-preview', 'popup,width=640,height=820')?.focus();
+        });
+    }
 
     // Posts the whole form (it carries the antiforgery token) and shows only
     // the newest response, so slow replies can't overwrite newer text.
@@ -35,8 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!r.ok || r.redirected) throw new Error(r.status);
                 return r.text();
             })
-            .then(html => { if (request === latest) preview.innerHTML = html; })
-            .catch(() => { if (request === latest) preview.textContent = 'Preview unavailable. Are you still signed in?'; });
+            .then(html => { if (request === latest) { preview.innerHTML = html; share(); } })
+            .catch(() => { if (request === latest) { preview.textContent = 'Preview unavailable. Are you still signed in?'; share(); } });
     }
 
     body.addEventListener('input', () => {
@@ -60,6 +81,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const refBox = editor.querySelector('.ezra-refs');
     if (refBox) setUpSuggestBox(refBox, { kinds: ['ref', 'strongs'], inputName: () => 'ReferenceChips', enterSubmits: false });
 });
+
+const PopoutChannel = 'ezra-preview';
+
+// The pop-out preview window: shows whatever the open editor sends, and asks
+// for the current preview when it opens (or when the editor reloads).
+function setUpPopout(page) {
+    const body = page.querySelector('.ezra-popout-body');
+    const heading = page.querySelector('[data-popout-title]');
+    const bar = page.querySelector('[data-popout-bar]');
+    const status = page.querySelector('[data-popout-status]');
+    if (!('BroadcastChannel' in window)) {
+        status.textContent = 'This browser can’t keep a separate preview window updated.';
+        return;
+    }
+    const channel = new BroadcastChannel(PopoutChannel);
+    channel.onmessage = e => {
+        const data = e.data ?? {};
+        if (data.closed) {
+            status.textContent = 'The editor was closed. This window keeps the last preview.';
+            status.hidden = false;
+            return;
+        }
+        if (typeof data.html === 'string') {
+            body.innerHTML = data.html;
+            status.hidden = true;
+        }
+        if (typeof data.title === 'string') {
+            const name = data.title.trim() || 'Untitled';
+            heading.textContent = name;
+            bar.textContent = `${name} · Preview`;
+            document.title = `${name} · Preview · Ezra`;
+        }
+    };
+    channel.postMessage({ hello: true });
+}
 
 // Tag chips with a searchable flyout (an ARIA combobox). Typing filters the
 // existing tags; when nothing matches exactly, a "Create" option adds a new

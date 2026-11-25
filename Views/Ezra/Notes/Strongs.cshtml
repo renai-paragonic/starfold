@@ -6,6 +6,8 @@
     var path = (List<Folder>)ViewData["Path"]!;
     var hebrew = StrongsParser.IsHebrew(entry.Id);
     ViewData["Title"] = $"{entry.Id} {entry.Lemma}";
+    // In the order picked with the sort buttons (oldest first by default).
+    var notes = NoteFolders.Sorted(Model, Context.Request.Cookies[NoteFolders.SortCookie]);
 }
 <div class="ezra-title-row">
     <h1>@entry.Id <bdi lang="@(hebrew ? "hbo" : "grc")" class="ezra-lemma">@entry.Lemma</bdi></h1>
@@ -50,12 +52,12 @@ else
     <div class="ezra-toolbar"><partial name="_LayoutToggle" /></div>
     if (Context.Request.Cookies[NoteFolders.LayoutCookie] == "list")
     {
-        <partial name="_NoteList" model="Model" />
+        <partial name="_NoteList" model="notes" />
     }
     else
     {
         <ul class="ezra-icons">
-            @foreach (var note in Model)
+            @foreach (var note in notes)
             {
                 <partial name="_NoteFile" model="note" />
             }

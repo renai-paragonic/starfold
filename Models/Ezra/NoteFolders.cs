@@ -15,6 +15,56 @@ public static class NoteFolders
     // "list" (the Icons | List toggle, remembered for every page).
     public const string LayoutCookie = "ezra_layout";
 
+    // The sort buttons beside Icons | List, also remembered in a cookie.
+    // Oldest first is the default.
+    public const string SortCookie = "ezra_sort";
+    public const string Oldest = "oldest", Newest = "newest", AToZ = "a-z", ZToA = "z-a";
+    public static readonly string[] Sorts = [Oldest, Newest, AToZ, ZToA];
+
+    // Notes in a sort's order. Dates are when the note was written. Titles
+    // go in natural order ("Hebrews 1:2" before "Hebrews 1:10"), ignoring
+    // case and any leading quote marks. Ties keep the oldest first.
+    public static List<Note> Sorted(IEnumerable<Note> notes, string? sort)
+    {
+        var byDate = notes.OrderBy(n => n.CreatedAt).ThenBy(n => n.Id);
+        return sort switch
+        {
+            Newest => [.. notes.OrderByDescending(n => n.CreatedAt).ThenByDescending(n => n.Id)],
+            AToZ => [.. byDate.OrderBy(n => n.Title, NaturalTitles)],
+            ZToA => [.. byDate.OrderByDescending(n => n.Title, NaturalTitles)],
+            _ => [.. byDate],
+        };
+    }
+
+    private static readonly Comparer<string> NaturalTitles = Comparer<string>.Create(CompareNatural);
+
+    // Compares runs of digits by value and everything else ignoring case.
+    private static int CompareNatural(string? a, string? b)
+    {
+        a = (a ?? "").TrimStart('“', '"', '‘', '\'', ' ');
+        b = (b ?? "").TrimStart('“', '"', '‘', '\'', ' ');
+        int i = 0, j = 0;
+        while (i < a.Length && j < b.Length)
+        {
+            if (char.IsAsciiDigit(a[i]) && char.IsAsciiDigit(b[j]))
+            {
+                int si = i, sj = j;
+                while (i < a.Length && char.IsAsciiDigit(a[i])) i++;
+                while (j < b.Length && char.IsAsciiDigit(b[j])) j++;
+                var x = a[si..i].TrimStart('0');
+                var y = b[sj..j].TrimStart('0');
+                var byValue = x.Length != y.Length ? x.Length.CompareTo(y.Length) : string.CompareOrdinal(x, y);
+                if (byValue != 0) return byValue;
+                continue;
+            }
+            var byText = string.Compare(a, i, b, j, 1, CultureInfo.InvariantCulture, CompareOptions.IgnoreCase);
+            if (byText != 0) return byText;
+            i++;
+            j++;
+        }
+        return (a.Length - i).CompareTo(b.Length - j);
+    }
+
     // Date folders follow US Central time, so an evening note files under
     // the day it was written, not the next UTC day.
     private static readonly TimeZoneInfo Zone = TimeZoneInfo.FindSystemTimeZoneById("America/Chicago");

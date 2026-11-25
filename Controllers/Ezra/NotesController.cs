@@ -64,6 +64,15 @@ public class NotesController(EzraDbContext db) : Controller
         return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : RedirectToAction(nameof(Index));
     }
 
+    // The sort buttons beside Icons | List, remembered the same way.
+    [HttpGet("sort/{sort}")]
+    public IActionResult Sort(string sort, string? returnUrl)
+    {
+        if (!NoteFolders.Sorts.Contains(sort)) return NotFound();
+        Response.Cookies.Append(NoteFolders.SortCookie, sort, Remembered);
+        return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl) : RedirectToAction(nameof(Index));
+    }
+
     private static Folder ViewStep(string view) => view switch
     {
         NoteFolders.Strongs => new("Strong's", "/ezra?view=strongs"),
@@ -79,7 +88,7 @@ public class NotesController(EzraDbContext db) : Controller
         if (NoteFolders.ParseSlug(date) is not DateOnly day) return NotFound();
         var all = SignedIn;
         var notes = (await db.Notes.Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
-                .Where(n => all || n.IsPublic).OrderByDescending(n => n.UpdatedAt).ToListAsync())
+                .Where(n => all || n.IsPublic).OrderBy(n => n.CreatedAt).ThenBy(n => n.Id).ToListAsync())
             .Where(n => NoteFolders.LocalDate(n.CreatedAt) == day).ToList();
         if (notes.Count == 0) return NotFound();
         var label = NoteFolders.Label(day);
@@ -125,7 +134,7 @@ public class NotesController(EzraDbContext db) : Controller
         if (view is not (NoteFolders.Books or NoteFolders.Tags)) return NotFound();
         var all = SignedIn;
         var notes = (await db.Notes.Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
-                .Where(n => all || n.IsPublic).OrderByDescending(n => n.UpdatedAt).ToListAsync())
+                .Where(n => all || n.IsPublic).OrderBy(n => n.CreatedAt).ThenBy(n => n.Id).ToListAsync())
             .Where(n => NoteFolders.IsUnfiled(n, view)).ToList();
         return View("Folder", new FolderPage
         {
@@ -157,7 +166,7 @@ public class NotesController(EzraDbContext db) : Controller
         var notes = await db.Notes
             .Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
             .Where(n => (all || n.IsPublic) && n.Tags.Any(t => t.Id == tag.Id))
-            .OrderByDescending(n => n.UpdatedAt)
+            .OrderBy(n => n.CreatedAt).ThenBy(n => n.Id)
             .ToListAsync();
         if (notes.Count == 0) return NotFound();
         if (name != tag.Name) return RedirectToAction(nameof(Tag), new { name = tag.Name });
@@ -189,7 +198,7 @@ public class NotesController(EzraDbContext db) : Controller
         var signedIn = SignedIn;
         var notes = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
             .Where(n => (signedIn || n.IsPublic) && refs.Any(r => r.NoteId == n.Id))
-            .OrderByDescending(n => n.UpdatedAt)
+            .OrderBy(n => n.CreatedAt).ThenBy(n => n.Id)
             .ToListAsync();
 
         List<Folder> path = [new("Notes", "/ezra"), ViewStep(NoteFolders.Books), new(found.Name, new ScriptureRef(found.Number).BrowsePath)];
@@ -272,7 +281,7 @@ public class NotesController(EzraDbContext db) : Controller
         if (patterns.Count == 0 && chips.Count == 0) return View(new List<Note>());
         var results = await notes
             .Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
-            .OrderByDescending(n => n.UpdatedAt)
+            .OrderBy(n => n.CreatedAt).ThenBy(n => n.Id)
             .ToListAsync();
         return View(results);
     }
@@ -322,7 +331,7 @@ public class NotesController(EzraDbContext db) : Controller
         var notes = await db.Notes
             .Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs)
             .Where(n => (all || n.IsPublic) && n.Strongs.Any(s => s.Id == entry.Id))
-            .OrderByDescending(n => n.UpdatedAt)
+            .OrderBy(n => n.CreatedAt).ThenBy(n => n.Id)
             .ToListAsync();
 
         // Numbers mentioned in the entry's text become links when they exist.
@@ -414,6 +423,11 @@ public class NotesController(EzraDbContext db) : Controller
     // The editor's live preview (debounced in ezra.js).
     [Authorize, HttpPost("preview")]
     public IActionResult Preview(string? bodyMd) => Content(NoteMarkdown.ToHtml(bodyMd), "text/html");
+
+    // The editor's "Pop out preview" window. It starts empty: the editor
+    // sends it the title and preview over a BroadcastChannel (ezra.js).
+    [Authorize, HttpGet("preview/window")]
+    public IActionResult PreviewWindow() => View();
 
     // The editor needs every tag name for the flyout's suggestions, and the
     // lemmas for its Strong's chips ("G26 ἀγάπη").

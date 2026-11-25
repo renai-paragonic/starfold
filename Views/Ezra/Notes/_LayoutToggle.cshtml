@@ -1,11 +1,42 @@
-@* Icons | List for a page's notes. Both come back to this page, query included. *@
+@* The sort buttons, a text-cursor divider, then Icons | List, for a page's
+   notes. Every button comes back to this page, query included.
+   Two sort buttons, by date and by title. The one in use is pressed and
+   shows its direction; pressing it again reverses it. The other shows its
+   default (oldest first, A to Z), and pressing it switches to that. *@
 @{
     var list = Context.Request.Cookies[NoteFolders.LayoutCookie] == "list";
+    var sort = Context.Request.Cookies[NoteFolders.SortCookie] is string s && NoteFolders.Sorts.Contains(s) ? s : NoteFolders.Oldest;
     var here = Context.Request.Path.Value + Context.Request.QueryString.Value;
+    var byTitle = sort is NoteFolders.AToZ or NoteFolders.ZToA;
+    // (by, shown, next): each button's kind, what it shows now, and what pressing it picks.
+    (string By, string Shown, string Next)[] buttons =
+    [
+        byTitle ? ("date", NoteFolders.Oldest, NoteFolders.Oldest) : ("date", sort, sort == NoteFolders.Oldest ? NoteFolders.Newest : NoteFolders.Oldest),
+        byTitle ? ("title", sort, sort == NoteFolders.AToZ ? NoteFolders.ZToA : NoteFolders.AToZ) : ("title", NoteFolders.AToZ, NoteFolders.AToZ),
+    ];
+    string Label(string key) => key switch
+    {
+        NoteFolders.Newest => "newest first",
+        NoteFolders.AToZ => "A to Z",
+        NoteFolders.ZToA => "Z to A",
+        _ => "oldest first",
+    };
 }
-<span class="ezra-toolbar-group ezra-layout-toggle" role="group" aria-label="Show notes as">
-    <a asp-action="Layout" asp-route-layout="icons" asp-route-returnUrl="@here" class="ezra-button ezra-icon-button" title="Icons"
-       aria-current="@(list ? null : "true")"><img src="/images/ezra-note.svg" alt="Icons" /></a>
-    <a asp-action="Layout" asp-route-layout="list" asp-route-returnUrl="@here" class="ezra-button ezra-icon-button" title="List"
-       aria-current="@(list ? "true" : null)"><img src="/images/ezra-list.svg" alt="List" /></a>
+<span class="ezra-toolbar-group ezra-layout-toggle">
+    <span class="ezra-toolbar-group" role="group" aria-label="Sort notes">
+        @foreach (var (by, shown, next) in buttons)
+        {
+            var pressed = shown == sort;
+            <a asp-action="Sort" asp-route-sort="@next" asp-route-returnUrl="@here" class="ezra-button ezra-icon-button"
+               title="@($"Sort by {by} ({Label(shown)}){(pressed ? ", click to reverse" : "")}")"
+               aria-current="@(pressed ? "true" : null)"><img src="/images/ezra-sort-@(shown).svg" alt="@($"Sort by {by}, {Label(shown)}")" /></a>
+        }
+    </span>
+    <img src="/images/ezra-cursor.svg" alt="" class="ezra-toolbar-cursor" />
+    <span class="ezra-toolbar-group" role="group" aria-label="Show notes as">
+        <a asp-action="Layout" asp-route-layout="icons" asp-route-returnUrl="@here" class="ezra-button ezra-icon-button" title="Icons"
+           aria-current="@(list ? null : "true")"><img src="/images/ezra-note.svg" alt="Icons" /></a>
+        <a asp-action="Layout" asp-route-layout="list" asp-route-returnUrl="@here" class="ezra-button ezra-icon-button" title="List"
+           aria-current="@(list ? "true" : null)"><img src="/images/ezra-list.svg" alt="List" /></a>
+    </span>
 </span>
