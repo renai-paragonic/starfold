@@ -10,6 +10,7 @@ else
         {
             <li>
                 <a asp-action="Show" asp-route-id="@note.Id" asp-route-slug="@note.Slug">@note.Title</a>
+                <partial name="_CollectIcon" model="note" />
                 <span class="ezra-meta">@note.UpdatedAt.ToString("MMM d, yyyy")</span>
                 @if (!note.IsPublic)
                 {

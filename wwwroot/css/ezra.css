@@ -180,6 +180,9 @@ body {
     cursor: pointer;
 }
 
+/* Buttons that ezra.js shows only when they can work. */
+.ezra-button[hidden] { display: none; }
+
 .ezra-form button:active,
 .ezra-button:active,
 .ezra-danger:active,
@@ -517,6 +520,119 @@ body {
 .ezra-popout { margin: 8px; }
 .ezra-popout .ezra-preview { min-height: 0; }
 
+/* The pop-out's Win95 tab strip. The panel's top edge slides up under the
+   tabs, and the raised active tab covers it, so they join. */
+/* The strip scrolls sideways when crowded; Close all stays at its right. */
+.ezra-tabbar { display: flex; align-items: flex-end; gap: 8px; }
+
+.ezra-tabbar .ezra-close-all { flex: none; margin-bottom: 4px; padding: 2px 8px; font-size: 12px; font-weight: 400; }
+
+.ezra-tabstrip {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: flex-end;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.ezra-tabstrip [role="tab"] {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+    padding: 3px 12px;
+    border: 2px solid;
+    border-color: var(--ezra-light) var(--ezra-shade) var(--ezra-light) var(--ezra-light);
+    background: var(--ezra-face);
+    color: var(--ezra-fg);
+    font: 13px var(--ezra-ui);
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Saved notes' tabs are all one width; long titles trail off. */
+.ezra-tabstrip [role="tab"][data-note] { flex-basis: 160px; padding-right: 4px; }
+
+.ezra-tab-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* A tab's ×: a tiny Win95 title-bar button. */
+.ezra-tab-close {
+    flex: none;
+    width: 16px;
+    height: 14px;
+    padding: 0;
+    border: 1px solid;
+    border-color: var(--ezra-light) var(--ezra-shade) var(--ezra-shade) var(--ezra-light);
+    background: var(--ezra-face);
+    color: var(--ezra-fg);
+    font: 700 11px/12px Tahoma, sans-serif;
+    cursor: pointer;
+}
+
+.ezra-tab-close:active { border-color: var(--ezra-shade) var(--ezra-light) var(--ezra-light) var(--ezra-shade); }
+
+/* Dragging: the tab being moved fades, and a gold bar marks where it lands. */
+.ezra-tabstrip .is-dragging { opacity: 0.5; }
+.ezra-tabstrip .is-drop-before { box-shadow: inset 3px 0 0 var(--ezra-gold); }
+.ezra-tabstrip .is-drop-after { box-shadow: inset -3px 0 0 var(--ezra-gold); }
+
+.ezra-tabstrip [role="tab"][aria-selected="true"] {
+    margin-top: 0;
+    padding-bottom: 6px;
+    border-bottom-color: var(--ezra-bg);
+    background: var(--ezra-bg);
+    font-weight: 700;
+}
+
+.ezra-tabstrip [role="tab"]:focus-visible { outline: 1px dotted var(--ezra-fg); outline-offset: -5px; }
+
+.ezra-tabpanel {
+    position: relative;
+    margin-top: -2px;
+    padding: 12px;
+    border: 2px solid;
+    border-color: var(--ezra-light) var(--ezra-shade) var(--ezra-shade) var(--ezra-light);
+}
+
+/* A saved note's ↻ Refresh, at the right above the note. */
+.ezra-tab-tools { display: flex; justify-content: flex-end; }
+
+/* The note page's "Add to pop-out" keeps its size beside a long title. */
+.ezra-collect { flex: none; }
+
+/* The small "Add to pop-out" in lists: a little beveled icon button. */
+.ezra-collect-icon {
+    margin-right: 8px;
+    padding: 1px 3px;
+    line-height: 0;
+    vertical-align: middle;
+}
+
+.ezra-collect-icon img { width: 16px; height: 16px; }
+
+/* In an icon pane it sits in the tile's top-right corner, and shows on hover
+   or focus (always, on a touch screen with no hover). */
+.ezra-icons > li { position: relative; }
+
+.ezra-icons .ezra-collect-icon {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0;
+    opacity: 0;
+}
+
+.ezra-icons > li:hover .ezra-collect-icon,
+.ezra-icons > li:focus-within .ezra-collect-icon { opacity: 1; }
+
+@media (hover: none) {
+    .ezra-icons .ezra-collect-icon { opacity: 1; }
+}
+
 .ezra-tabs button { font-weight: 400; }
 .ezra-tabs button[aria-pressed="true"] { background: var(--ezra-bg); font-weight: 700; }
 
@@ -560,6 +676,7 @@ body {
     .ezra-tabs { display: flex; gap: 8px; }
     /* A phone opens a "window" as another tab; Write | Preview does that job. */
     .ezra-popout-tools { display: none; }
+    .ezra-collect, .ezra-collect-icon { display: none; }
     .ezra-panes[data-mode="write"] .ezra-preview,
     .ezra-panes[data-mode="preview"] textarea { display: none; }
     .ezra-main, .ezra-main-wide { max-width: calc(100% - 16px); }

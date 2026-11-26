@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- A small window with a gold plus, in Ezra's colors: "Add to pop-out" in lists. -->
+  <rect x="2.5" y="4.5" width="22" height="19" fill="#f6f2e6" stroke="#3b3266"/>
+  <rect x="3" y="5" width="21" height="5" fill="#3d42a8"/>
+  <path d="M6 14.5h14M6 17.5h14M6 20.5h9" stroke="#9195de"/>
+  <circle cx="24" cy="23" r="7" fill="#d9a94a" stroke="#3b3266"/>
+  <path d="M24 19v8M20 23h8" stroke="#3b3266" stroke-width="2.5"/>
+</svg>

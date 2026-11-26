@@ -1,0 +1,8 @@
+@model Note
+@* The small "Add to pop-out" button in note lists and icon panes. Signed in
+   and desktop only; ezra.js shows it and swaps the icon once the note is in. *@
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <button type="button" class="ezra-button ezra-collect-icon" data-collect-id="@Model.Id" data-collect-title="@Model.Title"
+            data-popout-url="/ezra/collection" title="Add to pop-out" hidden><img src="/images/ezra-collect.svg" alt="Add to pop-out" /></button>
+}

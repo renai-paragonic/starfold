@@ -1,0 +1,17 @@
+@model Note
+@* A saved note's tab in the pop-out window (ezra.js puts it in the panel).
+   Its Ezra links open in the main window. *@
+<div data-note-title="@Model.Title">
+    <h1>@Model.Title</h1>
+    <p class="ezra-meta">
+        Updated @Model.UpdatedAt.ToString("MMMM d, yyyy")
+        @if (!Model.IsPublic)
+        {
+            <span class="ezra-badge">Private</span>
+        }
+        <a asp-action="Show" asp-route-id="@Model.Id" asp-route-slug="@Model.Slug">Open note</a>
+        <a asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
+    </p>
+    <partial name="_NoteChips" model="Model" />
+    <div class="ezra-prose">@Html.Raw(NoteMarkdown.ToHtml(Model.BodyMd))</div>
+</div>

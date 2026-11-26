@@ -1,0 +1,40 @@
+@* The pop-out window (desktop). No header or footer: just a window with a tab
+   strip. Its pinned "Live preview" tab is filled in by the open editor as you
+   type (ezra.js, setUpPopout). *@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    @* Fixed, so OBS can find the window by its title. ezra.js never changes it. *@
+    <title>Ezra Collection</title>
+    <link rel="icon" type="image/png" href="~/images/Talmy.png" />
+    <link rel="stylesheet" href="~/css/ezra.css" asp-append-version="true" />
+    <script src="~/js/ezra.js" asp-append-version="true" defer></script>
+</head>
+<body>
+    <main class="ezra-window ezra-popout">
+        <div class="ezra-window-bar" aria-hidden="true">
+            <span class="ezra-window-title" data-popout-bar>Preview</span>
+            <span class="ezra-window-buttons"><span>_</span><span>□</span><span>×</span></span>
+        </div>
+        <div class="ezra-window-body">
+            @* Tabs are divs (not buttons) so a saved note's tab can hold its × and be dragged. *@
+            <div class="ezra-tabbar">
+                <div class="ezra-tabstrip" role="tablist" aria-label="Pop-out notes">
+                    <div role="tab" id="tab-live" tabindex="0" aria-selected="true" aria-controls="panel-live"><span class="ezra-tab-label">Live preview</span></div>
+                </div>
+                <button type="button" class="ezra-button ezra-close-all" hidden>Close all</button>
+            </div>
+            <section class="ezra-tabpanel" role="tabpanel" id="panel-live" aria-labelledby="tab-live">
+                <h1 data-popout-title>Preview</h1>
+                <p class="ezra-meta" data-popout-status>Waiting for the editor… Keep it open in the other window.</p>
+                <div class="ezra-preview ezra-prose ezra-popout-body" aria-live="polite"></div>
+            </section>
+        </div>
+    </main>
+</body>
+</html>

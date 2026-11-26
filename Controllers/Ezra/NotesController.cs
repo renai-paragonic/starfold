@@ -424,10 +424,21 @@ public class NotesController(EzraDbContext db) : Controller
     [Authorize, HttpPost("preview")]
     public IActionResult Preview(string? bodyMd) => Content(NoteMarkdown.ToHtml(bodyMd), "text/html");
 
-    // The editor's "Pop out preview" window. It starts empty: the editor
-    // sends it the title and preview over a BroadcastChannel (ezra.js).
-    [Authorize, HttpGet("preview/window")]
-    public IActionResult PreviewWindow() => View();
+    // The pop-out window (desktop): a tab strip whose pinned "Live preview"
+    // tab starts empty. The editor sends it the title and preview over a
+    // BroadcastChannel (ezra.js).
+    [Authorize, HttpGet("collection")]
+    public IActionResult Collection() => View();
+
+    // One saved note's tab in the pop-out window, fetched by ezra.js. A
+    // partial view, so the hit counter doesn't count it.
+    [Authorize, HttpGet("collection/{id:int}")]
+    public async Task<IActionResult> CollectionNote(int id)
+    {
+        var note = await db.Notes.Include(n => n.Tags).Include(n => n.Refs).Include(n => n.Strongs).FirstOrDefaultAsync(n => n.Id == id);
+        if (note is null) return NotFound();
+        return PartialView("_CollectionNote", note);
+    }
 
     // The editor needs every tag name for the flyout's suggestions, and the
     // lemmas for its Strong's chips ("G26 ἀγάπη").

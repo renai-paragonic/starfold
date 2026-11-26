@@ -1,16 +1,26 @@
 @model Note
 @{
     ViewData["Title"] = Model.Title;
+    var signedIn = User.Identity?.IsAuthenticated == true;
 }
-<article>
-    <h1>@Model.Title</h1>
+@* Signed in, data-note-id tells an open pop-out window to refresh this note's tab (ezra.js). *@
+<article data-note-id="@(signedIn ? Model.Id : null)" data-note-title="@(signedIn ? Model.Title : null)">
+    <div class="ezra-title-row">
+        <h1>@Model.Title</h1>
+        @if (signedIn)
+        {
+            @* Desktop only; ezra.js shows it. *@
+            <button type="button" class="ezra-button ezra-collect" data-collect-id="@Model.Id" data-collect-title="@Model.Title"
+                    data-popout-url="/ezra/collection" hidden>Add to pop-out</button>
+        }
+    </div>
     <p class="ezra-meta">
         Updated @Model.UpdatedAt.ToString("MMMM d, yyyy")
         @if (!Model.IsPublic)
         {
             <span class="ezra-badge">Private</span>
         }
-        @if (User.Identity?.IsAuthenticated == true)
+        @if (signedIn)
         {
             <a asp-action="Edit" asp-route-id="@Model.Id">Edit</a>
         }
