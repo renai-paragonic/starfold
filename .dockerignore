@@ -9,6 +9,7 @@
 .config/
 App_Data/
 tests/
+paraclete/
 ProjectPlans/
 appsettings.Development.json
 starfold-mobile.sln

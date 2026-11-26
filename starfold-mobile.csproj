@@ -5,8 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>starfold_mobile</RootNamespace>
-    <!-- The test project lives under this folder; keep its files out of the app. -->
-    <DefaultItemExcludes>$(DefaultItemExcludes);tests/**</DefaultItemExcludes>
+    <!-- The test project and Paraclete (the Node bot) live under this folder; keep their files out of the app. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);tests/**;paraclete/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

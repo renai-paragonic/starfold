@@ -1,6 +1,8 @@
 # starfold
 Web app coded primarily through Claude Code. Presently hosts my notes app Ezra, and will likely include stream bots and/or API endpoints in the future.
 
+`paraclete/` holds Paraclete, my Twitch bot (Node + TypeScript). It's a separate app with its own `package.json`, and it isn't deployed yet.
+
 ## Running your own copy of Ezra
 
 Ezra is the note-taking part of the site, at `/ezra`. It's built for Bible study and sermon prep:

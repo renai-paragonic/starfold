@@ -78,6 +78,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - **Ezra** (notes feature): plan and status in `ProjectPlans/ezra.md`. It's local only (git-ignored, since it holds local paths and droplet details), so a fresh clone doesn't have it. Code in `Data/EzraDbContext.cs`, `Data/Migrations/`, `Models/Ezra/`, `Controllers/Ezra/`, `Views/Ezra/`, and `Bible/` (book data, the reference parser, and the Strong's parser and lexicon reader; `BibleBooks.Data.cs` is generated, so see the plan before editing it). The Strong's lexicon data isn't committed (CC BY-SA): it's downloaded to `App_Data/strongs/` and loaded with `dotnet run -- import-strongs App_Data/strongs` (see the plan).
 - `tests/Starfold.Tests/`: the xUnit tests. The app's csproj excludes `tests/**` so the test files don't compile into the app.
 - `App_Data/`: the local dev SQLite database (git-ignored). Don't put it in `data/`: on Windows that's the same folder as `Data/` (the code).
+- `paraclete/`: **Paraclete**, Renai's Twitch bot (Node 24 + TypeScript, its own `package.json`). See "Paraclete" below.
 
 ### Layout rules
 - There are two separate layouts, split at **767px / 768px**. Mobile styles live in `@media (max-width: 767px)` and desktop styles in `@media (min-width: 768px)`. Put each change in the block it applies to.
@@ -99,9 +100,15 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ### Conventions
 - Some files have a UTF-8 BOM. Preserve the existing encoding.
 - Add new images to `wwwroot/images/` and reference them with root-relative paths (`/images/...`), as the existing markup does.
-- Keep it dependency-free: no npm, no bundler, and no new NuGet packages or CDN libraries without asking.
+- Keep the site dependency-free: no npm, no bundler, and no new NuGet packages or CDN libraries without asking. (Paraclete's npm packages are the exception, and they stay inside `paraclete/`.)
 - Approved NuGet packages: `Microsoft.EntityFrameworkCore.Sqlite` and `.Design` (9.0.x), and `Markdig` (from Ezra step 3). In the test project only: `xunit`, `xunit.runner.visualstudio`, and `Microsoft.NET.Test.Sdk` (from Ezra step 5).
 - `dotnet-ef` is a local tool (`dotnet tool restore`). Add migrations with `dotnet tool run dotnet-ef migrations add <Name> --output-dir Data/Migrations`. The app applies them at startup.
+
+### Paraclete (`paraclete/`)
+- A Twitch bot: chat commands, stream event reactions and (planned) redeem alerts. Plan and status in `ProjectPlans/paraclete.md` (local only, like Ezra's).
+- Run everything from `paraclete/`: `npm ci`, `npm run build`, `npm test` (vitest), and `npm run dev` (needs its git-ignored `.env`). Verify a change with tests first, then live in chat where it matters.
+- It keeps its own `.gitignore` and `.gitattributes` (LF everywhere). Its dev db is `paraclete/data/paraclete.db` (git-ignored). In production it will share Starfold's SQLite file; each app owns its own tables, and Paraclete keeps its `PRAGMA user_version` migrations.
+- Don't add npm packages without asking.
 
 ---
 
