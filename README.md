@@ -1,5 +1,5 @@
 # starfold
-Web app I vibe coded using Claude Sonata to serve as a home/bio page. Will likely also serve as an API for stream bots down the line.
+Web app coded primarily through Claude Code. Presently hosts my notes app Ezra, and will likely include stream bots and/or API endpoints in the future.
 
 ## Running your own copy of Ezra
 
@@ -105,3 +105,4 @@ Then open http://localhost:8080/ezra. The other commands run the same way, for e
 ## License
 
 The code is MIT licensed (see `LICENSE`). The Strong's lexicon data you download in step 4 is CC BY-SA, from Open Scriptures.
+=======
