@@ -1,0 +1,23 @@
+# Starfold on the droplet. Copy this file to the deploy folder, next to an
+# .env (mode 600) that sets:
+#   STARFOLD_TAG=<the image tag to run>
+#   Ezra__AdminPasswordHash=<from `hash-password`>
+# Then: docker compose pull && docker compose up -d
+# A rollback is the previous tag in .env and `docker compose up -d` again.
+services:
+  starfold:
+    image: renaiparagonic/renai-repo:${STARFOLD_TAG:?set STARFOLD_TAG in .env}
+    restart: unless-stopped
+    # Loopback only: nginx on the host is the way in.
+    ports:
+      - "127.0.0.1:8081:8080"
+    # The shared data folder (Paraclete will mount it too), owned by UID 1654.
+    volumes:
+      - /srv/starfold-data:/data
+    env_file: .env
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -97,10 +97,16 @@ builder.Services.AddRateLimiter(o =>
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(5) }));
 });
 
-// Behind nginx: take the client IP and scheme from X-Forwarded-*. Only
-// loopback proxies are trusted by default.
+// Behind nginx: take the client IP and scheme from X-Forwarded-*. Loopback
+// proxies are trusted by default. In Docker, nginx on the host reaches the app
+// from the bridge network's gateway, in Docker's private range, so trust that
+// too. The container's port is published on 127.0.0.1 only, so only the host
+// can connect.
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
-    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    o.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(System.Net.IPAddress.Parse("172.16.0.0"), 12));
+});
 
 var app = builder.Build();
 

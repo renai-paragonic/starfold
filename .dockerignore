@@ -1,0 +1,22 @@
+# Keep the build context to the app: no database, keys, dev settings, tests or
+# build output. wwwroot (including the git-ignored star GIF) goes in.
+**/bin
+**/obj
+**/.git
+**/.vs
+**/.vscode
+**/*.user
+.config/
+App_Data/
+tests/
+ProjectPlans/
+appsettings.Development.json
+starfold-mobile.sln
+Dockerfile
+.dockerignore
+.gitignore
+compose*.yaml
+.env
+CLAUDE.md
+README.md
+LICENSE

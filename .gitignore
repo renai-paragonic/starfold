@@ -58,11 +58,10 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 
-# Docker
-Dockerfile
-.dockerignore
+# Docker (the Dockerfile, .dockerignore and compose.yaml are committed; the
+# droplet's .env holds the secrets)
 compose.debug.yaml
-compose.yaml
+.env
 
 # Ezra / shared SQLite database (local dev)
 /App_Data/
