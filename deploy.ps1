@@ -57,7 +57,7 @@ Write-Host "  commit $commit -> image $image"
 
 Write-Step 'Running the tests'
 # Release, because a running `dotnet run` locks bin/Debug.
-Invoke-Checked 'dotnet' @('test', 'tests/Starfold.Tests', '-c', 'Release', '--nologo', '-v', 'q')
+Invoke-Checked 'dotnet' @('test', 'tests/Starfold.Tests', '-c', 'Release', '--nologo')
 
 Write-Step "Building $image"
 Invoke-Checked 'docker' @('build', '--pull', '-t', $image, '.')
