@@ -66,5 +66,8 @@ compose.debug.yaml
 # Ezra / shared SQLite database (local dev)
 /App_Data/
 
+# Project plans stay local: they hold local paths and droplet details
+/ProjectPlans/
+
 # Ezra star background: source and license unknown, so it's copied in on deploy
 /wwwroot/images/star-bg.gif
