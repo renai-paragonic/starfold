@@ -17,6 +17,10 @@ Dockerfile
 .gitignore
 compose*.yaml
 .env
+.gitattributes
+deploy.cmd
+deploy.ps1
+deploy-remote.sh
 CLAUDE.md
 README.md
 LICENSE
